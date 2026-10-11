@@ -10,4 +10,7 @@ module.exports = {
   globals: {
     shopify: "readonly"
   },
+  // Testene kører med Vitest, ikke Jest. Uden en version kan Jest-reglerne
+  // fra Remix' konfiguration slet ikke indlæses.
+  settings: { jest: { version: 29 } },
 };

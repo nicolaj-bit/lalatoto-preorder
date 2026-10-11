@@ -14,7 +14,6 @@ database.sqlite
 .env
 .env.*
 
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
@@ -23,3 +22,6 @@ pnpm-lock.yaml
 # Ignore shopify files created during app dev
 .shopify/*
 .shopify.lock
+
+# Id'er fra beviset (scripts/bevis.ts)
+/.bevis

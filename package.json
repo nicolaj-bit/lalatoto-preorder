@@ -1,5 +1,5 @@
 {
-  "name": "app",
+  "name": "lalatoto-preorder",
   "private": true,
   "scripts": {
     "build": "remix vite:build",
@@ -12,11 +12,16 @@
     "start": "remix-serve ./build/server/index.js",
     "docker-start": "npm run setup && npm run start",
     "setup": "prisma generate && prisma migrate deploy",
-    "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
+    "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint app scripts tests",
     "shopify": "shopify",
     "prisma": "prisma",
     "graphql-codegen": "graphql-codegen",
-    "vite": "vite"
+    "vite": "vite",
+    "test": "vitest run --project enhed",
+    "test:watch": "vitest --project enhed",
+    "test:integration": "vitest run --project integration",
+    "typecheck": "tsc --noEmit",
+    "bevis": "tsx scripts/bevis.ts"
   },
   "type": "module",
   "engines": {
@@ -32,7 +37,7 @@
     "@shopify/app-bridge-react": "^4.1.6",
     "@shopify/polaris": "^12.0.0",
     "@shopify/shopify-app-remix": "^4.1.0",
-    "@shopify/shopify-app-session-storage-prisma": "^8.0.0",
+    "@shopify/shopify-app-session-storage-prisma": "^9.0.1",
     "isbot": "^5.1.0",
     "prisma": "^6.2.1",
     "react": "^18.2.0",
@@ -50,8 +55,10 @@
     "eslint": "^8.42.0",
     "eslint-config-prettier": "^10.0.1",
     "prettier": "^3.2.4",
+    "tsx": "^4.23.15",
     "typescript": "^5.2.2",
-    "vite": "^6.2.2"
+    "vite": "^6.2.2",
+    "vitest": "^3.2.7"
   },
   "workspaces": {
     "packages": [

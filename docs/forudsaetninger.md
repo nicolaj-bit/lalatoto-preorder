@@ -151,8 +151,11 @@ Samme side har en begrænsning, der rammer en dansk butik direkte:
 bruges til forudbestilling. Det skal afprøves, for det betyder, at kunder,
 der kun vil betale med MobilePay, ikke kan forudbestille.
 
-**UKENDT**: hvilken betalingsudbyder lalatoto.dk bruger i dag. Det skal
-tjekkes under *Indstillinger → Betalinger*, før vi bygger videre.
+**Afklaret (2026-10-13):** lalatoto.dk bruger kun Shopify Payments (oplyst af
+Nicolaj). Det er én af de fire, så butikken opfylder kravet. Begrænsningen
+om lokale betalingsmetoder gælder stadig: tilbyder Shopify Payments
+MobilePay i checkout, kan kunder, der vælger MobilePay, sandsynligvis ikke
+forudbestille (**GÆT**, se ovenfor).
 
 ### 1.5 Andre begrænsninger
 
@@ -394,8 +397,8 @@ Mulige statusser fra `orderPaymentStatus` ([OrderPaymentStatusResult](https://sh
 
 1. **Får appen `read_payment_mandate` og `write_payment_mandate`?** Uden dem
    intet træk. Ansøg nu.
-2. **Hvilken betalingsudbyder bruger lalatoto.dk?** Er det ikke én af de
-   fire, virker forudbestilling slet ikke.
+2. ~~Hvilken betalingsudbyder bruger lalatoto.dk?~~ Afklaret: kun Shopify
+   Payments, som understøtter forudbestilling (afsnit 1.4).
 3. **Kan MobilePay bruges?** Ifølge dokumentationen sandsynligvis ikke.
 4. **Godkender checkout kortet ved 0 % betaling?** Afgør, hvornår et dårligt
    kort opdages.

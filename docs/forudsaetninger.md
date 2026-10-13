@@ -232,6 +232,13 @@ men skal være med, før appen tages i brug.
   organisation i Dev Dashboard og installeret på én udviklingsbutik. Ingen
   App Store, ingen review. (`distribution: AppDistribution.SingleMerchant` i
   `app/shopify.server.ts`.)
+- **Distribution (valgt 2026-10-13): Custom distribution til
+  `felt-post.myshopify.com`.** Valget kan ikke ændres bagefter. En custom app
+  kan kun installeres på flere butikker, når de ligger i samme
+  Plus-organisation
+  ([Select a distribution method](https://shopify.dev/docs/apps/launch/distribution/select-distribution-method), læst 2026-10-13).
+  Denne app er derfor en ren testapp. Drift på lalatoto.dk kræver en ny app
+  med samme kode.
 - Scripts og integrationstest henter token med *client credentials grant*,
   som kun virker, når app og butik ligger i samme organisation
   ([Authenticate an app for stores in your organization](https://shopify.dev/docs/apps/build/authentication-authorization/client-credentials-grant), læst 2026-10-11).

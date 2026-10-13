@@ -22,8 +22,8 @@ Admin API-version i hele projektet: **2026-04**.
 | Krav undersøgt (afsnit 1) | ✅ Færdig |
 | App oprettet i Dev Dashboard | ⚠️ 2026-10-13 — i butikkens organisation ved en fejl; slettet og oprettes forfra under partnerorganisationen |
 | Udviklingsbutik | ✅ `felt-post.myshopify.com` |
-| Appversion med `read_payment_mandate`/`write_payment_mandate` frigivet | ✅ 2026-10-13 — ingen fejl (se 1.2) |
-| Virker kaldene med de to scopes i praksis? | ⏳ Ukendt, indtil beviset kører |
+| `read_payment_mandate`/`write_payment_mandate` i partnerorganisationen | ❌ Afvist: «Indeholder ugyldige omfang» (se 1.2) |
+| Godkendelse fra Shopify | ⏳ Sag åben hos Shopify Support |
 | Selling plan group + testprodukt oprettet på udviklingsbutik | ⏳ Ikke kørt endnu |
 | Testordre lagt igennem | ⏳ Ikke kørt endnu |
 | Restbeløb trukket via API | ⏳ Ikke kørt endnu |
@@ -70,11 +70,10 @@ seneste 60 dage.
 
 ### 1.2 Skal appen godkendes?
 
-**Uafklaret.** Dokumentationen siger ja, men en appversion med de to scopes
-blev frigivet uden fejl på en app, der kun skal bruges på vores
-udviklingsbutik. Det kan betyde, at kravet ikke håndhæves for
-udviklingsbutikker, eller at det først slår igennem, når API'et kaldes. Det
-afgøres, når beviset kører (se «Set i praksis» nedenfor).
+**Ja, for en app i vores partnerorganisation.** Her afviser Shopify de to
+scopes, indtil de er godkendt. Det er set i praksis (se «Set i praksis»
+nedenfor). En app i butikkens egen organisation fik derimod lov at erklære
+dem — hvad det betyder, er uafklaret.
 
 Kilder (læst 2026-10-11):
 
@@ -118,18 +117,26 @@ der til Shopify Support.
 kører: feltet `scope` i svaret fra client credentials-tokenet viser, hvilke
 scopes Shopify reelt har givet appen på butikken.
 
+4. Appen blev oprettet forfra i **partnerorganisationen** med alle scopes fra
+   1.1. Dev Dashboard afviste den med den nøjagtige fejltekst:
+   «Indeholder ugyldige omfang: read_payment_mandate, write_payment_mandate».
+   Det svarer til dokumentationens `app_access`-fejl. Appen er derfor oprettet
+   uden de to scopes.
+
 **Forbehold:** Appen i punkt 1 og 2 lå i organisationen for butikken
 lalatoto.dk, ikke i vores partnerorganisation. Den blev slettet samme dag og
 oprettes forfra under partnerorganisationen, hvor udviklingsbutikken
-`felt-post.myshopify.com` også ligger. **UKENDT**: om Shopify behandler de to
-scopes ens i de to slags organisationer — det skal ses igen, når appen er
-oprettet forfra.
+`felt-post.myshopify.com` også ligger. Punkt 4 viser, at Shopify **ikke**
+behandler de to scopes ens i de to slags organisationer. **UKENDT**: om
+appen i butikkens organisation reelt kunne have trukket penge — den blev
+aldrig afprøvet.
 
-De to scopes står igen i `shopify.app.toml`, så den matcher den frigivne
-version.
+De to scopes er taget ud af `shopify.app.toml`, så den matcher appen i
+partnerorganisationen.
 
-**Konsekvens:** Indtil beviset har kørt, regner vi stadig med, at trækket
-kan blive blokeret. Sagen hos Shopify Support holdes åben, til vi ved det.
+**Konsekvens:** Beviset kan oprette plan og produkt og lægge testordren, men
+ikke trække restbeløbet, før Shopify godkender de to scopes. Sagen hos
+Shopify Support skal have fejlteksten fra punkt 4.
 
 ### 1.3 Skal butikken godkendes?
 

@@ -66,7 +66,7 @@ export const PRODUCT_SET = /* GraphQL */ `
 /** read_publications */
 export const PUBLICATIONS_QUERY = /* GraphQL */ `
   query Salgskanaler {
-    publications(first: 20) { nodes { id catalog { title } } }
+    publications(first: 20) { nodes { id name catalog { title } } }
   }
 `;
 

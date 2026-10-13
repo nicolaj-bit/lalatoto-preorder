@@ -98,7 +98,10 @@ async function opret(client: AdminClient, args: { dato?: string; pris?: string }
 
   // Produktet skal ligge i Online Store, ellers kan det ikke købes i checkout.
   const pubs = await client.graphql(PUBLICATIONS_QUERY);
-  const online = pubs.publications.nodes.find((p: any) => p.catalog?.title === "Online Store");
+  // På felt-post er catalog null for Online Store, så kanalen findes også på navnet.
+  const online = pubs.publications.nodes.find(
+    (p: any) => p.catalog?.title === "Online Store" || p.name === "Online Store",
+  );
   if (online) {
     const pubRes = await client.graphql(PUBLISHABLE_PUBLISH, { id: product.id, input: [{ publicationId: online.id }] });
     throwOnUserErrors("publishablePublish", pubRes.publishablePublish.userErrors);

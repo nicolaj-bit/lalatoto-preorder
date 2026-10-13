@@ -24,7 +24,7 @@ Admin API-version i hele projektet: **2026-04**.
 | Udviklingsbutik | ✅ `felt-post.myshopify.com` |
 | `read_payment_mandate`/`write_payment_mandate` i partnerorganisationen | ❌ Afvist: «Indeholder ugyldige omfang» (se 1.2) |
 | Godkendelse fra Shopify | ⏳ Sag åben hos Shopify Support |
-| Selling plan group + testprodukt oprettet på udviklingsbutik | ⏳ Ikke kørt endnu |
+| Selling plan group + testprodukt oprettet på udviklingsbutik | ✅ 2026-10-13 på `felt-post` (se 3.1) |
 | Testordre lagt igennem | ⏳ Ikke kørt endnu |
 | Restbeløb trukket via API | ⏳ Ikke kørt endnu |
 | De fire fejltilfælde afprøvet (afsnit 4) | ⏳ Ikke kørt endnu — kun dokumentationen er læst |
@@ -254,25 +254,85 @@ men skal være med, før appen tages i brug.
 
 ## 3. Beviset: hvad Shopify opretter
 
-> ⏳ **Ikke kørt endnu.** Nedenfor står, hvad kaldene er, og hvad
-> dokumentationen siger, vi vil se. Når `scripts/bevis.ts` har kørt, erstattes
-> hvert «Forventet» med Shopifys rå svar.
+> ✅ **3.1 er kørt** (2026-10-13). ⏳ 3.2–3.4 er ikke kørt endnu: der står,
+> hvad kaldene er, og hvad dokumentationen siger, vi vil se. Når de har kørt,
+> erstattes hvert «Forventet» med Shopifys rå svar.
 
 ### 3.1 Planen
 
-`npm run bevis -- opret --dato 2026-12-01` laver:
+Kørt 2026-10-13 mod `felt-post.myshopify.com`:
 
-1. Et testprodukt (`productSet`) til 499 kr., der kan sælges uden lager.
-2. En selling plan group (`sellingPlanGroupCreate`) med én plan:
-   - `category: PRE_ORDER`
-   - `billingPolicy.fixed.checkoutCharge: { type: PERCENTAGE, value: { percentage: 0 } }` — 0 % ved checkout
-   - `remainingBalanceChargeTrigger: EXACT_TIME` og `remainingBalanceChargeExactTime` — restbeløbet forfalder 1. december kl. 9 dansk tid
-   - `deliveryPolicy.fixed.fulfillmentTrigger: EXACT_TIME` — sendes tidligst samme tidspunkt
-   - `inventoryPolicy.reserve: ON_SALE` — lageret reserveres ved køb
-3. Produktet knyttes til gruppen og lægges i Online Store.
+```shell
+SHOPIFY_STORE=felt-post.myshopify.com npm run bevis -- opret --dato 2026-11-12
+```
 
-Objekter, Shopify opretter: `Product`, `ProductVariant`, `SellingPlanGroup`,
-`SellingPlan`. **Udfyldes med id'er fra kørslen.**
+**Butikstjekket:** `assertDevelopmentStore` svarede
+«Butik: Felt-post (felt-post.myshopify.com), valuta DKK, udviklingsbutik ✔» —
+altså `shop.plan.partnerDevelopment: true`.
+
+**Scopes i token-svaret** (feltet `scope` fra client credentials grant):
+
+```
+write_products,write_purchase_options,write_orders,read_customers,read_payment_terms,write_publications
+```
+
+- Det svarer til `shopify.app.toml`. Shopify skriver kun `write_*`, når appen
+  også har `read_*` — `read_products`, `read_purchase_options`, `read_orders`
+  og `read_publications` står derfor ikke for sig selv. **GÆT**: at
+  `write_*` dækker læsning; kaldene, der læser, virkede.
+- **`read_payment_mandate` og `write_payment_mandate` er der ikke**, som
+  forventet (se 1.2). Heller ikke `read_customer_payment_methods`.
+- Client credentials virkede: app og butik ligger altså i samme organisation.
+
+**Hvad Shopify oprettede:**
+
+| Objekt | Id |
+|---|---|
+| `Product` | `gid://shopify/Product/11362090942806` (handle `forudbestilling-testprodukt-2026-10-13`) |
+| `ProductVariant` | `gid://shopify/ProductVariant/55731226018134`, pris 499,00 DKK |
+| `SellingPlanGroup` | `gid://shopify/SellingPlanGroup/78393114966` |
+| `SellingPlan` | `gid://shopify/SellingPlan/691307512150` |
+
+Planen, som Shopify gemte den (rå svar fra `sellingPlanGroupCreate`, forkortet):
+
+```json
+{
+  "category": "PRE_ORDER",
+  "billingPolicy": {
+    "checkoutCharge": { "type": "PERCENTAGE", "value": { "percentage": 0 } },
+    "remainingBalanceChargeTrigger": "EXACT_TIME",
+    "remainingBalanceChargeExactTime": "2026-11-12T08:00:00Z",
+    "remainingBalanceChargeTimeAfterCheckout": null
+  },
+  "deliveryPolicy": {
+    "fulfillmentTrigger": "EXACT_TIME",
+    "fulfillmentExactTime": "2026-11-12T08:00:00Z",
+    "preAnchorBehavior": "ASAP"
+  },
+  "inventoryPolicy": { "reserve": "ON_SALE" }
+}
+```
+
+`08:00:00Z` er kl. 9 dansk vintertid den 12. november — som tiltænkt.
+`userErrors` var tomme i både `productSet` og `sellingPlanGroupCreate`.
+
+**Set undervejs:**
+
+1. **Online Store blev ikke fundet i første kørsel.** På felt-post er
+   `catalog` `null` for alle tre salgskanaler (Online Store, Point of Sale,
+   Shop), så opslaget på `catalog.title` ramte ingenting. Scriptet slår nu
+   også op på `name`. Produktet blev derefter udgivet med
+   `publishablePublish` (ingen `userErrors`), og
+   `publishedOnPublication` svarer `true`. `onlineStoreUrl` er stadig `null`
+   — **GÆT**: fordi butikken er beskyttet med adgangskode.
+2. `deliveryPolicy.preAnchorBehavior` kom tilbage som `ASAP`, selv om vi ikke
+   satte den. **UKENDT**: hvad den betyder for en fast leveringsdato.
+3. `requiresSellingPlan` er `false`: produktet kan også købes til fuld pris
+   uden forudbestilling. Godt nok til beviset; skal overvejes i drift.
+4. Planens navn og valgmulighed siger «betal ved afsendelse» /
+   «resten ved afsendelse», men planen trækker på en fast dato
+   (`EXACT_TIME`). Teksten ses af kunden i checkout og bør rettes, før
+   appen bruges på rigtige kunder.
 
 ### 3.2 Testordren
 

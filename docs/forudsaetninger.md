@@ -20,7 +20,8 @@ Admin API-version i hele projektet: **2026-04**.
 | Trin | Status |
 |---|---|
 | Krav undersøgt (afsnit 1) | ✅ Færdig |
-| App oprettet i Dev Dashboard | ✅ 2026-10-13 |
+| App oprettet i Dev Dashboard | ⚠️ 2026-10-13 — i butikkens organisation ved en fejl; slettet og oprettes forfra under partnerorganisationen |
+| Udviklingsbutik | ✅ `felt-post.myshopify.com` |
 | Appversion med `read_payment_mandate`/`write_payment_mandate` frigivet | ✅ 2026-10-13 — ingen fejl (se 1.2) |
 | Virker kaldene med de to scopes i praksis? | ⏳ Ukendt, indtil beviset kører |
 | Selling plan group + testprodukt oprettet på udviklingsbutik | ⏳ Ikke kørt endnu |
@@ -116,6 +117,13 @@ der til Shopify Support.
 `orderCreateMandatePayment` faktisk virker. Det første tjek, når beviset
 kører: feltet `scope` i svaret fra client credentials-tokenet viser, hvilke
 scopes Shopify reelt har givet appen på butikken.
+
+**Forbehold:** Appen i punkt 1 og 2 lå i organisationen for butikken
+lalatoto.dk, ikke i vores partnerorganisation. Den blev slettet samme dag og
+oprettes forfra under partnerorganisationen, hvor udviklingsbutikken
+`felt-post.myshopify.com` også ligger. **UKENDT**: om Shopify behandler de to
+scopes ens i de to slags organisationer — det skal ses igen, når appen er
+oprettet forfra.
 
 De to scopes står igen i `shopify.app.toml`, så den matcher den frigivne
 version.

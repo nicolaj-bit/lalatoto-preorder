@@ -4,9 +4,9 @@ client_id = ""
 
 [access_scopes]
 # Se docs/forudsaetninger.md for hvorfor hvert scope er her.
-# read_payment_mandate og write_payment_mandate mangler bevidst: Shopify
-# afviste appen med dem, før de er godkendt (set 2026-10-13, afsnit 1.2).
-# Læg dem tilbage efter "write_orders," når godkendelsen foreligger.
+# read_payment_mandate og write_payment_mandate mangler bevidst: Dev Dashboard
+# afviser dem i partnerorganisationen med «Indeholder ugyldige omfang», indtil
+# Shopify har godkendt dem (afsnit 1.2). Læg dem tilbage efter "write_orders,".
 scopes = "write_products,read_products,write_purchase_options,read_purchase_options,read_orders,write_orders,read_customers,read_payment_terms,read_publications,write_publications"
 
 [webhooks]

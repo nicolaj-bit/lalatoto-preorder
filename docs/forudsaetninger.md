@@ -20,8 +20,10 @@ Admin API-version i hele projektet: **2026-04**.
 | Trin | Status |
 |---|---|
 | Krav undersøgt (afsnit 1) | ✅ Færdig |
-| App oprettet i Dev Dashboard | ✅ 2026-10-13 — uden payment mandate-scopes (se 1.2) |
-| Godkendelse til `read_payment_mandate`/`write_payment_mandate` | ❌ Mangler — skal søges hos Shopify |
+| App oprettet i Dev Dashboard | ⚠️ 2026-10-13 — i butikkens organisation ved en fejl; slettet og oprettes forfra under partnerorganisationen |
+| Udviklingsbutik | ✅ `felt-post.myshopify.com` |
+| `read_payment_mandate`/`write_payment_mandate` i partnerorganisationen | ❌ Afvist: «Indeholder ugyldige omfang» (se 1.2) |
+| Godkendelse fra Shopify | ⏳ Sag åben hos Shopify Support |
 | Selling plan group + testprodukt oprettet på udviklingsbutik | ⏳ Ikke kørt endnu |
 | Testordre lagt igennem | ⏳ Ikke kørt endnu |
 | Restbeløb trukket via API | ⏳ Ikke kørt endnu |
@@ -68,10 +70,10 @@ seneste 60 dage.
 
 ### 1.2 Skal appen godkendes?
 
-**Ja — appen skal have Shopifys godkendelse til `read_payment_mandate` og
-`write_payment_mandate`, før den kan trække restbeløbet.** Det gælder også
-en custom app, der endnu ikke er installeret nogen steder. Det er nu set i
-praksis, ikke kun læst (se «Set i praksis» nedenfor).
+**Ja, for en app i vores partnerorganisation.** Her afviser Shopify de to
+scopes, indtil de er godkendt. Det er set i praksis (se «Set i praksis»
+nedenfor). En app i butikkens egen organisation fik derimod lov at erklære
+dem — hvad det betyder, er uafklaret.
 
 Kilder (læst 2026-10-11):
 
@@ -95,21 +97,46 @@ De to kilder peger på hver sin vej (Shopify Support vs. Partner Dashboard).
 access requests*; findes der ikke et kort dér for payment mandates, skrives
 der til Shopify Support.
 
-**Set i praksis (2026-10-13):** Appen blev
-oprettet i Dev Dashboard under organisationen Lalatoto of Denmark med alle
-scopes fra 1.1. Shopify afviste at oprette den, så længe
-`read_payment_mandate` og `write_payment_mandate` var med. Uden de to scopes
-blev den oprettet. Det bekræfter dokumentationen: kravet gælder allerede, når
-appversionen oprettes — før appen er installeret på nogen butik, og dermed
-også for en app, der kun skal bruges på en udviklingsbutik. Den nøjagtige
-fejltekst blev ikke gemt.
+**Set i praksis (2026-10-13):**
 
-De to scopes er derfor taget ud af `shopify.app.toml`, indtil godkendelsen
-foreligger. Ellers fejler `shopify app deploy` på samme måde.
+1. Appen blev oprettet i Dev Dashboard under organisationen Lalatoto of
+   Denmark. Første gang blev det opfattet som en afvisning af de to scopes,
+   og de blev taget ud. Den nøjagtige fejltekst blev ikke gemt, og det er
+   uklart, hvad den egentlig handlede om.
+2. Samme dag blev en ny appversion med `read_payment_mandate` og
+   `write_payment_mandate` gemt og frigivet **uden fejl**. Det modsiger
+   citatet ovenfor om, at versionen fejler med `app_access`.
+3. Shopify Support (chat, samme dag) svarede: «I can't grant
+   read_payment_mandate or write_payment_mandate from this chat. Your
+   request needs Shopify review; an advisor can review the app's access
+   request and guide you through the next step, but I can't promise
+   approval.» Support bad om appens navn eller id og fejlteksten.
 
-**Konsekvens:** Uden godkendelsen kan vi oprette planen og lægge testordren,
-men ikke trække restbeløbet via API'et. Det er den største risiko i hele
-projektet og bør søges om først.
+**UKENDT**: om en butik kan godkende installationen med de to scopes, og om
+`orderCreateMandatePayment` faktisk virker. Det første tjek, når beviset
+kører: feltet `scope` i svaret fra client credentials-tokenet viser, hvilke
+scopes Shopify reelt har givet appen på butikken.
+
+4. Appen blev oprettet forfra i **partnerorganisationen** med alle scopes fra
+   1.1. Dev Dashboard afviste den med den nøjagtige fejltekst:
+   «Indeholder ugyldige omfang: read_payment_mandate, write_payment_mandate».
+   Det svarer til dokumentationens `app_access`-fejl. Appen er derfor oprettet
+   uden de to scopes.
+
+**Forbehold:** Appen i punkt 1 og 2 lå i organisationen for butikken
+lalatoto.dk, ikke i vores partnerorganisation. Den blev slettet samme dag og
+oprettes forfra under partnerorganisationen, hvor udviklingsbutikken
+`felt-post.myshopify.com` også ligger. Punkt 4 viser, at Shopify **ikke**
+behandler de to scopes ens i de to slags organisationer. **UKENDT**: om
+appen i butikkens organisation reelt kunne have trukket penge — den blev
+aldrig afprøvet.
+
+De to scopes er taget ud af `shopify.app.toml`, så den matcher appen i
+partnerorganisationen.
+
+**Konsekvens:** Beviset kan oprette plan og produkt og lægge testordren, men
+ikke trække restbeløbet, før Shopify godkender de to scopes. Sagen hos
+Shopify Support skal have fejlteksten fra punkt 4.
 
 ### 1.3 Skal butikken godkendes?
 
@@ -139,8 +166,11 @@ Samme side har en begrænsning, der rammer en dansk butik direkte:
 bruges til forudbestilling. Det skal afprøves, for det betyder, at kunder,
 der kun vil betale med MobilePay, ikke kan forudbestille.
 
-**UKENDT**: hvilken betalingsudbyder lalatoto.dk bruger i dag. Det skal
-tjekkes under *Indstillinger → Betalinger*, før vi bygger videre.
+**Afklaret (2026-10-13):** lalatoto.dk bruger kun Shopify Payments (oplyst af
+Nicolaj). Det er én af de fire, så butikken opfylder kravet. Begrænsningen
+om lokale betalingsmetoder gælder stadig: tilbyder Shopify Payments
+MobilePay i checkout, kan kunder, der vælger MobilePay, sandsynligvis ikke
+forudbestille (**GÆT**, se ovenfor).
 
 ### 1.5 Andre begrænsninger
 
@@ -202,6 +232,13 @@ men skal være med, før appen tages i brug.
   organisation i Dev Dashboard og installeret på én udviklingsbutik. Ingen
   App Store, ingen review. (`distribution: AppDistribution.SingleMerchant` i
   `app/shopify.server.ts`.)
+- **Distribution (valgt 2026-10-13): Custom distribution til
+  `felt-post.myshopify.com`.** Valget kan ikke ændres bagefter. En custom app
+  kan kun installeres på flere butikker, når de ligger i samme
+  Plus-organisation
+  ([Select a distribution method](https://shopify.dev/docs/apps/launch/distribution/select-distribution-method), læst 2026-10-13).
+  Denne app er derfor en ren testapp. Drift på lalatoto.dk kræver en ny app
+  med samme kode.
 - Scripts og integrationstest henter token med *client credentials grant*,
   som kun virker, når app og butik ligger i samme organisation
   ([Authenticate an app for stores in your organization](https://shopify.dev/docs/apps/build/authentication-authorization/client-credentials-grant), læst 2026-10-11).
@@ -382,8 +419,8 @@ Mulige statusser fra `orderPaymentStatus` ([OrderPaymentStatusResult](https://sh
 
 1. **Får appen `read_payment_mandate` og `write_payment_mandate`?** Uden dem
    intet træk. Ansøg nu.
-2. **Hvilken betalingsudbyder bruger lalatoto.dk?** Er det ikke én af de
-   fire, virker forudbestilling slet ikke.
+2. ~~Hvilken betalingsudbyder bruger lalatoto.dk?~~ Afklaret: kun Shopify
+   Payments, som understøtter forudbestilling (afsnit 1.4).
 3. **Kan MobilePay bruges?** Ifølge dokumentationen sandsynligvis ikke.
 4. **Godkender checkout kortet ved 0 % betaling?** Afgør, hvornår et dårligt
    kort opdages.

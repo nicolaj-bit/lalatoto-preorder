@@ -88,9 +88,10 @@ Appen er en custom app: ingen App Store, intet review.
    *Indstillinger → Betalinger*.
 3. `shopify app deploy` — sender scopes og webhooks til Shopify.
    - `read_payment_mandate`/`write_payment_mandate` står ikke i
-     `shopify.app.toml`, fordi Shopify afviser appen med dem, indtil de er
-     godkendt. Uden dem kan beviset oprette plan og ordre, men ikke trække
-     restbeløbet. Se `docs/forudsaetninger.md` afsnit 1.2.
+     `shopify.app.toml`: Dev Dashboard afviser dem med «Indeholder ugyldige
+     omfang», indtil Shopify har godkendt dem. Uden dem kan beviset oprette
+     plan og ordre, men ikke trække restbeløbet. Se `docs/forudsaetninger.md`
+     afsnit 1.2.
 4. `shopify app dev` og installér appen på udviklingsbutikken, når CLI'en
    viser linket.
 

@@ -20,8 +20,9 @@ Admin API-version i hele projektet: **2026-04**.
 | Trin | Status |
 |---|---|
 | Krav undersøgt (afsnit 1) | ✅ Færdig |
-| App oprettet i Dev Dashboard | ✅ 2026-10-13 — uden payment mandate-scopes (se 1.2) |
-| Godkendelse til `read_payment_mandate`/`write_payment_mandate` | ❌ Mangler — skal søges hos Shopify |
+| App oprettet i Dev Dashboard | ✅ 2026-10-13 |
+| Appversion med `read_payment_mandate`/`write_payment_mandate` frigivet | ✅ 2026-10-13 — ingen fejl (se 1.2) |
+| Virker kaldene med de to scopes i praksis? | ⏳ Ukendt, indtil beviset kører |
 | Selling plan group + testprodukt oprettet på udviklingsbutik | ⏳ Ikke kørt endnu |
 | Testordre lagt igennem | ⏳ Ikke kørt endnu |
 | Restbeløb trukket via API | ⏳ Ikke kørt endnu |
@@ -68,10 +69,11 @@ seneste 60 dage.
 
 ### 1.2 Skal appen godkendes?
 
-**Ja — appen skal have Shopifys godkendelse til `read_payment_mandate` og
-`write_payment_mandate`, før den kan trække restbeløbet.** Det gælder også
-en custom app, der endnu ikke er installeret nogen steder. Det er nu set i
-praksis, ikke kun læst (se «Set i praksis» nedenfor).
+**Uafklaret.** Dokumentationen siger ja, men en appversion med de to scopes
+blev frigivet uden fejl på en app, der kun skal bruges på vores
+udviklingsbutik. Det kan betyde, at kravet ikke håndhæves for
+udviklingsbutikker, eller at det først slår igennem, når API'et kaldes. Det
+afgøres, når beviset kører (se «Set i praksis» nedenfor).
 
 Kilder (læst 2026-10-11):
 
@@ -95,21 +97,31 @@ De to kilder peger på hver sin vej (Shopify Support vs. Partner Dashboard).
 access requests*; findes der ikke et kort dér for payment mandates, skrives
 der til Shopify Support.
 
-**Set i praksis (2026-10-13):** Appen blev
-oprettet i Dev Dashboard under organisationen Lalatoto of Denmark med alle
-scopes fra 1.1. Shopify afviste at oprette den, så længe
-`read_payment_mandate` og `write_payment_mandate` var med. Uden de to scopes
-blev den oprettet. Det bekræfter dokumentationen: kravet gælder allerede, når
-appversionen oprettes — før appen er installeret på nogen butik, og dermed
-også for en app, der kun skal bruges på en udviklingsbutik. Den nøjagtige
-fejltekst blev ikke gemt.
+**Set i praksis (2026-10-13):**
 
-De to scopes er derfor taget ud af `shopify.app.toml`, indtil godkendelsen
-foreligger. Ellers fejler `shopify app deploy` på samme måde.
+1. Appen blev oprettet i Dev Dashboard under organisationen Lalatoto of
+   Denmark. Første gang blev det opfattet som en afvisning af de to scopes,
+   og de blev taget ud. Den nøjagtige fejltekst blev ikke gemt, og det er
+   uklart, hvad den egentlig handlede om.
+2. Samme dag blev en ny appversion med `read_payment_mandate` og
+   `write_payment_mandate` gemt og frigivet **uden fejl**. Det modsiger
+   citatet ovenfor om, at versionen fejler med `app_access`.
+3. Shopify Support (chat, samme dag) svarede: «I can't grant
+   read_payment_mandate or write_payment_mandate from this chat. Your
+   request needs Shopify review; an advisor can review the app's access
+   request and guide you through the next step, but I can't promise
+   approval.» Support bad om appens navn eller id og fejlteksten.
 
-**Konsekvens:** Uden godkendelsen kan vi oprette planen og lægge testordren,
-men ikke trække restbeløbet via API'et. Det er den største risiko i hele
-projektet og bør søges om først.
+**UKENDT**: om en butik kan godkende installationen med de to scopes, og om
+`orderCreateMandatePayment` faktisk virker. Det første tjek, når beviset
+kører: feltet `scope` i svaret fra client credentials-tokenet viser, hvilke
+scopes Shopify reelt har givet appen på butikken.
+
+De to scopes står igen i `shopify.app.toml`, så den matcher den frigivne
+version.
+
+**Konsekvens:** Indtil beviset har kørt, regner vi stadig med, at trækket
+kan blive blokeret. Sagen hos Shopify Support holdes åben, til vi ved det.
 
 ### 1.3 Skal butikken godkendes?
 

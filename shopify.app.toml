@@ -4,10 +4,10 @@ client_id = ""
 
 [access_scopes]
 # Se docs/forudsaetninger.md for hvorfor hvert scope er her.
-# read_payment_mandate og write_payment_mandate mangler bevidst: Shopify
-# afviste appen med dem, før de er godkendt (set 2026-10-13, afsnit 1.2).
-# Læg dem tilbage efter "write_orders," når godkendelsen foreligger.
-scopes = "write_products,read_products,write_purchase_options,read_purchase_options,read_orders,write_orders,read_customers,read_payment_terms,read_publications,write_publications"
+# read_payment_mandate og write_payment_mandate kræver ifølge Shopify
+# godkendelse, men en version med dem blev frigivet uden fejl 2026-10-13.
+# Om de virker, afgøres af beviset (afsnit 1.2).
+scopes = "write_products,read_products,write_purchase_options,read_purchase_options,read_orders,write_orders,read_customers,read_payment_terms,read_payment_mandate,write_payment_mandate,read_publications,write_publications"
 
 [webhooks]
 api_version = "2026-04"

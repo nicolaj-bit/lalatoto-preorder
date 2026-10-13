@@ -460,7 +460,21 @@ på». Det er korrekt set fra appen — den kan ikke se kortet. **UKENDT**: om
 der overhovedet er gemt et `PaymentMandate`, når ordren er betalt med Bogus
 Gateway.
 
-**Udfyldes**: hvordan forfaldsdatoen ser ud i admin på ordren.
+**Sådan ser ordren ud i admin** (skærmbillede, 2026-10-13):
+
+- Status: «Betaling afventer» og «Planlagt».
+- Boksen «Planlagt»: «Næste klargøring: 12. november 2026» og en knap
+  «Klargør tidligere». Planens `fulfillmentExactTime` styrer altså, hvornår
+  ordren kan sendes.
+- Boksen «Betaling afventer»: Total 548,00 kr., Betalt 0,00 kr.,
+  «Saldo — Forfalder 12. nov. 2026 — 548,00 kr.». Den tidligere **GÆT** om
+  «Betaling forfalder» holdt næsten: admin skriver «Forfalder».
+- Knapperne **«Send faktura»** og **«Opkræv betaling»**. **UKENDT**: om
+  «Opkræv betaling» trækker på kundens gemte kort uden appen. Gør den det,
+  kan butikken trække restbeløbet manuelt, indtil appen får
+  `write_payment_mandate` — og vi kan afprøve trækket nu. Afprøves på en
+  ny ordre, så #1001 forbliver urørt til `traek`.
+
 
 ### 3.4 Kaldene, der trækker beløbet
 

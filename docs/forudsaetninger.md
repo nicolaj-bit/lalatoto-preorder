@@ -25,7 +25,7 @@ Admin API-version i hele projektet: **2026-04**.
 | `read_payment_mandate`/`write_payment_mandate` i partnerorganisationen | ❌ Afvist: «Indeholder ugyldige omfang» (se 1.2) |
 | Godkendelse fra Shopify | ⏳ Sag åben hos Shopify Support |
 | Selling plan group + testprodukt oprettet på udviklingsbutik | ✅ 2026-10-13 på `felt-post` (se 3.1) |
-| Testordre lagt igennem | ⏳ Ikke kørt endnu |
+| Testordre lagt igennem | ✅ 2026-10-13, ordre #1001 — med Bogus Gateway, ikke Shopify Payments (se 3.2) |
 | Restbeløb trukket via API | ⏳ Ikke kørt endnu |
 | De fire fejltilfælde afprøvet (afsnit 4) | ⏳ Ikke kørt endnu — kun dokumentationen er læst |
 
@@ -254,9 +254,9 @@ men skal være med, før appen tages i brug.
 
 ## 3. Beviset: hvad Shopify opretter
 
-> ✅ **3.1 er kørt** (2026-10-13). ⏳ 3.2–3.4 er ikke kørt endnu: der står,
-> hvad kaldene er, og hvad dokumentationen siger, vi vil se. Når de har kørt,
-> erstattes hvert «Forventet» med Shopifys rå svar.
+> ✅ **3.1–3.3 er kørt** (2026-10-13), dog uden det gemte betalingsmiddel,
+> som kræver `read_payment_mandate`. ⏳ 3.4 er ikke kørt: der står, hvad
+> kaldene er, og hvad dokumentationen siger, vi vil se.
 
 ### 3.1 Planen
 
@@ -336,16 +336,67 @@ Planen, som Shopify gemte den (rå svar fra `sellingPlanGroupCreate`, forkortet)
 
 ### 3.2 Testordren
 
-Ordren lægges i butikkens checkout med Shopify Payments i testtilstand.
 Ifølge [Model pre-order and TBYB apps – Lifecycle](https://shopify.dev/docs/apps/build/purchase-options/deferred/model-deferred-purchase-solutions)
-opretter Shopify derefter: ordren, **betalingsaftalen** (`PaymentTerms`) med
+opretter Shopify ved køb: ordren, **betalingsaftalen** (`PaymentTerms`) med
 en **betalingsplan** (`PaymentSchedule`), en fulfillment order, og gemmer
 kundens betalingsmiddel (`PaymentMandate`).
 
-**Forventet** (ikke set endnu): `totalReceivedSet` = 0,00, `totalOutstandingSet`
-= 499,00, `displayFinancialStatus` = `PENDING` eller lignende. **UKENDT**: om
-checkout autoriserer et beløb på kortet ved 0 % — fx en kontrol på 0 kr. Det
-afgør, om et ugyldigt kort opdages ved køb eller først ved forfald.
+**Lagt 2026-10-13** i felt-posts checkout: ordre `#1001`,
+`gid://shopify/Order/8234472341846`, bekræftelse `C0U2ZIGEJ`.
+
+**Forbehold: betalt med Bogus Gateway** («(for testing) Bogus Gateway», kort
+«1»), ikke Shopify Payments. Bogus Gateway er ikke blandt de fire udbydere,
+der understøtter forudbestilling (1.4), men checkout tog imod den. Trækket
+(3.4) skal afprøves på en ordre betalt med Shopify Payments i testtilstand.
+
+**Set i checkout:**
+
+- Kurven: 499,00 kr. + fragt 49,00 kr. = 548,00 kr.
+  «Due today: 0,00 kr», «Due 12 Nov: 548,00 kr».
+- **Fragten udskydes også.** Restbeløbet er 548 kr., ikke 499 kr.
+- Over kortfeltet: «Your card will be charged on 12 November.»
+- Under betalingsknappen står Shopifys egen samtykketekst: «One or more items
+  in your cart is a deferred or recurring purchase. By continuing with your
+  payment, you agree that your payment method will automatically be charged
+  at the price and frequency listed on this page until it ends or you cancel.
+  All cancellations are subject to the cancellation policy.»
+- Planens navn «Forudbestil – betal ved afsendelse» står under varen. Det er
+  forkert, for der trækkes på en fast dato (se 3.1, punkt 4).
+- Bekræftelsessiden viser «Paid today 0,00 kr» og betalingsmetoden «Fixed».
+
+**Rå svar** (`npm run bevis -- vis --ordre 8234472341846`, forkortet):
+
+```json
+{
+  "name": "#1001",
+  "displayFinancialStatus": "PENDING",
+  "displayFulfillmentStatus": "SCHEDULED",
+  "test": false,
+  "totalPriceSet":       { "shopMoney": { "amount": "548.0", "currencyCode": "DKK" } },
+  "totalReceivedSet":    { "shopMoney": { "amount": "0.0",   "currencyCode": "DKK" } },
+  "totalOutstandingSet": { "shopMoney": { "amount": "548.0", "currencyCode": "DKK" } },
+  "paymentGatewayNames": [],
+  "lineItems": [{
+    "quantity": 1,
+    "sellingPlan": { "sellingPlanId": "gid://shopify/SellingPlan/691307512150",
+                     "name": "Forudbestil – betal ved afsendelse" },
+    "originalUnitPriceSet": { "shopMoney": { "amount": "499.0", "currencyCode": "DKK" } }
+  }],
+  "transactions": []
+}
+```
+
+- **Ingen transaktioner.** Checkout har hverken autoriseret eller trukket
+  noget, heller ikke 0 kr. Med Bogus Gateway opdages et ugyldigt kort altså
+  først ved trækket. **UKENDT**: om Shopify Payments gør det samme (åbent
+  spørgsmål 4 i afsnit 5).
+- `test` er `false`, selv om ordren er betalt med en testudbyder.
+  **GÆT**: fordi `test` kun sættes ud fra en transaktion, og der ingen er.
+- `paymentGatewayNames` er tom af samme grund.
+- `paymentCollectionDetails.additionalPaymentCollectionUrl` er udfyldt med
+  et link til en betalingsside for ordren. Linket indeholder en hemmelig
+  nøgle og er derfor ikke skrevet her. **UKENDT**: om linket kan sendes til
+  kunden, hvis trækket fejler (4.1).
 
 ### 3.3 Betalingsaftalen og forfaldsdatoen
 
@@ -361,22 +412,69 @@ order(id: $id) {
 }
 ```
 
-- `dueAt` — hvornår restbeløbet forfalder
-- `balanceDue` — hvad der mangler at blive trukket
-- `completedAt` — sat, når planen er betalt
-- `due` / `overdue` på `paymentTerms` — om noget er forfaldent
-
 Kilde: [PaymentSchedule](https://shopify.dev/docs/api/admin-graphql/2026-04/objects/PaymentSchedule) og
 [PaymentTerms](https://shopify.dev/docs/api/admin-graphql/2026-10/objects/PaymentTerms) (læst 2026-10-11).
 
-Det gemte betalingsmiddel ligger på
-`order.paymentCollectionDetails.vaultedPaymentMethods` som en liste af
-`PaymentMandate` med kortets mærke, sidste fire cifre, udløb og `expired`
-([PaymentMandate](https://shopify.dev/docs/api/admin-graphql/2026-01/objects/PaymentMandate), læst 2026-10-11).
+**Rå svar for ordre #1001:**
 
-**Udfyldes**: det rå svar fra `npm run bevis -- vis --ordre <id>`, og hvordan
-forfaldsdatoen ser ud i admin på ordren. **GÆT**: at admin viser «Betaling
-forfalder» med datoen.
+```json
+"paymentTerms": {
+  "id": "gid://shopify/PaymentTerms/86124888406",
+  "paymentTermsName": "Fixed",
+  "paymentTermsType": "FIXED",
+  "dueInDays": null,
+  "due": false,
+  "overdue": false,
+  "paymentSchedules": { "nodes": [{
+    "id": "gid://shopify/PaymentSchedule/90087293270",
+    "dueAt": "2026-11-12T08:00:00Z",
+    "issuedAt": null,
+    "completedAt": null,
+    "due": false,
+    "balanceDue":   { "amount": "548.0", "currencyCode": "DKK" },
+    "totalBalance": { "amount": "548.0", "currencyCode": "DKK" }
+  }]}
+}
+```
+
+- `dueAt` er præcis planens `remainingBalanceChargeExactTime` (kl. 9 dansk
+  tid 12. november). Forfaldsdatoen kommer altså fra planen og ikke fra
+  købstidspunktet.
+- `paymentTermsType` er `FIXED` — den samme type, som bruges til fakturaer
+  med fast forfaldsdato.
+- `balanceDue` = 548 kr. inklusive fragt (se 3.2).
+
+**Det gemte betalingsmiddel kan ikke læses endnu.** Feltet
+`order.paymentCollectionDetails.vaultedPaymentMethods` gav:
+
+```json
+{
+  "message": "Access denied for vaultedPaymentMethods field. Required access: `read_payment_mandate` access scope.",
+  "extensions": { "code": "ACCESS_DENIED" }
+}
+```
+
+`vis` falder nu tilbage til at læse ordren uden feltet, og `decideCharge`
+svarer `NO_MANDATE`: «Ordren har intet gemt betalingsmiddel, der kan trækkes
+på». Det er korrekt set fra appen — den kan ikke se kortet. **UKENDT**: om
+der overhovedet er gemt et `PaymentMandate`, når ordren er betalt med Bogus
+Gateway.
+
+**Sådan ser ordren ud i admin** (skærmbillede, 2026-10-13):
+
+- Status: «Betaling afventer» og «Planlagt».
+- Boksen «Planlagt»: «Næste klargøring: 12. november 2026» og en knap
+  «Klargør tidligere». Planens `fulfillmentExactTime` styrer altså, hvornår
+  ordren kan sendes.
+- Boksen «Betaling afventer»: Total 548,00 kr., Betalt 0,00 kr.,
+  «Saldo — Forfalder 12. nov. 2026 — 548,00 kr.». Den tidligere **GÆT** om
+  «Betaling forfalder» holdt næsten: admin skriver «Forfalder».
+- Knapperne **«Send faktura»** og **«Opkræv betaling»**. **UKENDT**: om
+  «Opkræv betaling» trækker på kundens gemte kort uden appen. Gør den det,
+  kan butikken trække restbeløbet manuelt, indtil appen får
+  `write_payment_mandate` — og vi kan afprøve trækket nu. Afprøves på en
+  ny ordre, så #1001 forbliver urørt til `traek`.
+
 
 ### 3.4 Kaldene, der trækker beløbet
 
@@ -483,4 +581,5 @@ Mulige statusser fra `orderPaymentStatus` ([OrderPaymentStatusResult](https://sh
    Payments, som understøtter forudbestilling (afsnit 1.4).
 3. **Kan MobilePay bruges?** Ifølge dokumentationen sandsynligvis ikke.
 4. **Godkender checkout kortet ved 0 % betaling?** Afgør, hvornår et dårligt
-   kort opdages.
+   kort opdages. Med Bogus Gateway: nej, ingen transaktioner (3.2). Shopify
+   Payments er ikke afprøvet.

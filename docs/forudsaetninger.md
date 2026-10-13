@@ -26,7 +26,8 @@ Admin API-version i hele projektet: **2026-04**.
 | Godkendelse fra Shopify | ⏳ Sag åben hos Shopify Support |
 | Selling plan group + testprodukt oprettet på udviklingsbutik | ✅ 2026-10-13 på `felt-post` (se 3.1) |
 | Testordre lagt igennem | ✅ 2026-10-13, ordre #1001 — med Bogus Gateway, ikke Shopify Payments (se 3.2) |
-| Restbeløb trukket via API | ⏳ Ikke kørt endnu |
+| Restbeløb trukket manuelt fra admin | ✅ 2026-10-13, ordre #1003 med Bogus Gateway (se 3.5) |
+| Restbeløb trukket via API | ⏳ Ikke kørt endnu — kræver `write_payment_mandate` |
 | De fire fejltilfælde afprøvet (afsnit 4) | ⏳ Ikke kørt endnu — kun dokumentationen er læst |
 
 Koden til beviset ligger klar i `scripts/bevis.ts`. Afsnit 3 og 4 udfyldes
@@ -254,9 +255,9 @@ men skal være med, før appen tages i brug.
 
 ## 3. Beviset: hvad Shopify opretter
 
-> ✅ **3.1–3.3 er kørt** (2026-10-13), dog uden det gemte betalingsmiddel,
-> som kræver `read_payment_mandate`. ⏳ 3.4 er ikke kørt: der står, hvad
-> kaldene er, og hvad dokumentationen siger, vi vil se.
+> ✅ **3.1–3.3 og 3.5 er kørt** (2026-10-13), dog uden det gemte
+> betalingsmiddel, som kræver `read_payment_mandate`. ⏳ 3.4 er ikke kørt:
+> der står, hvad kaldene er, og hvad dokumentationen siger, vi vil se.
 
 ### 3.1 Planen
 
@@ -472,8 +473,8 @@ Gateway.
 - Knapperne **«Send faktura»** og **«Opkræv betaling»**. **UKENDT**: om
   «Opkræv betaling» trækker på kundens gemte kort uden appen. Gør den det,
   kan butikken trække restbeløbet manuelt, indtil appen får
-  `write_payment_mandate` — og vi kan afprøve trækket nu. Afprøves på en
-  ny ordre, så #1001 forbliver urørt til `traek`.
+  `write_payment_mandate` — og vi kan afprøve trækket nu. Afprøvet på
+  ordre #1003, se 3.5. #1001 er urørt og venter på `traek`.
 
 
 ### 3.4 Kaldene, der trækker beløbet
@@ -499,6 +500,71 @@ trække igen. Et bevidst nyt forsøg efter en afvisning får et nyt forsøgsnumm
 (`--kun-autoriser`).
 
 **Udfyldes**: rå svar fra alle fire skridt.
+
+
+### 3.5 Manuelt træk fra admin (uden appen)
+
+Afprøvet 2026-10-13 på ordre `#1003` (`gid://shopify/Order/8234493378902`),
+lagt som #1001: forudbestilling, 0 kr. ved checkout, Bogus Gateway, kort «1».
+
+(Ordre `#1002` blev et almindeligt køb til fuld pris: varen kom i kurven med
+produktsidens knap og fik ingen selling plan. Den viser, at produktet kan
+købes uden forudbestilling, fordi `requiresSellingPlan` er `false` — se 3.1.)
+
+**I admin:** pilen ved «Opkræv betaling» viste tre valg:
+
+- «Bogus •••• 1» — kundens gemte kort
+- «Andet kreditkort»
+- «Marker som betalt»
+
+Valget «Bogus •••• 1» gav straks «Betaling modtaget». Ordren skiftede fra
+«Betaling afventer» til «Betalt», og tidslinjen viser «En betaling på
+548,00 kr. DKK blev behandlet …» og en mail om «Order payment receipt» til
+kunden.
+
+**Rå svar bagefter** (`npm run bevis -- vis --ordre 8234493378902`, forkortet):
+
+```json
+{
+  "displayFinancialStatus": "PAID",
+  "displayFulfillmentStatus": "SCHEDULED",
+  "totalReceivedSet":    { "shopMoney": { "amount": "548.0", "currencyCode": "DKK" } },
+  "totalOutstandingSet": { "shopMoney": { "amount": "0.0",   "currencyCode": "DKK" } },
+  "paymentGatewayNames": ["bogus"],
+  "paymentTerms": { "paymentSchedules": { "nodes": [{
+    "id": "gid://shopify/PaymentSchedule/90087358806",
+    "dueAt": "2026-11-12T08:00:00Z",
+    "completedAt": "2026-10-13T18:44:37Z",
+    "balanceDue": { "amount": "0.0", "currencyCode": "DKK" }
+  }]}},
+  "transactions": [{
+    "kind": "SALE", "status": "SUCCESS", "gateway": "bogus", "test": true,
+    "createdAt": "2026-10-13T18:44:37Z",
+    "amountSet": { "shopMoney": { "amount": "548.0", "currencyCode": "DKK" } }
+  }]
+}
+```
+
+`decideCharge` svarer nu `ALREADY_PAID`: «Alle betalingsplaner på ordren er
+gennemført».
+
+**Hvad det viser:**
+
+1. **Shopify gemmer kortet ved checkout**, også ved 0 % og med Bogus
+   Gateway. Det besvarer det **UKENDT** i 3.3 for Bogus Gateway.
+2. **Butikken kan trække restbeløbet manuelt fra admin uden appen.** Ét træk
+   på hele saldoen, som en `SALE` (autoriseret og trukket på én gang).
+   Betalingsplanen får `completedAt`, og `balanceDue` går til 0.
+3. Trækket kan ske **før forfaldsdatoen**. Admin spurgte ikke.
+4. Ordren forbliver «Planlagt» til 12. november — betaling og afsendelse er
+   uafhængige.
+5. `test` på ordren er stadig `false`, selv om transaktionen har
+   `test: true`.
+
+**Konsekvens:** Indtil Shopify godkender `write_payment_mandate`, kan
+forudbestillinger håndteres manuelt: butikken klikker «Opkræv betaling» på
+hver ordre på forfaldsdatoen. **GÆT**: at Shopify Payments opfører sig ens —
+afprøvet kun med Bogus Gateway.
 
 ---
 
@@ -576,7 +642,8 @@ Mulige statusser fra `orderPaymentStatus` ([OrderPaymentStatusResult](https://sh
 ## 5. Åbne spørgsmål, der skal afklares først
 
 1. **Får appen `read_payment_mandate` og `write_payment_mandate`?** Uden dem
-   intet træk. Ansøg nu.
+   intet automatisk træk. Sag åben hos Shopify Support. Indtil da kan
+   butikken trække manuelt fra admin (3.5).
 2. ~~Hvilken betalingsudbyder bruger lalatoto.dk?~~ Afklaret: kun Shopify
    Payments, som understøtter forudbestilling (afsnit 1.4).
 3. **Kan MobilePay bruges?** Ifølge dokumentationen sandsynligvis ikke.

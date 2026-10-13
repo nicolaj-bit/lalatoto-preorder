@@ -20,6 +20,8 @@ Admin API-version i hele projektet: **2026-04**.
 | Trin | Status |
 |---|---|
 | Krav undersøgt (afsnit 1) | ✅ Færdig |
+| App oprettet i Dev Dashboard | ✅ 2026-10-13 — uden payment mandate-scopes (se 1.2) |
+| Godkendelse til `read_payment_mandate`/`write_payment_mandate` | ❌ Mangler — skal søges hos Shopify |
 | Selling plan group + testprodukt oprettet på udviklingsbutik | ⏳ Ikke kørt endnu |
 | Testordre lagt igennem | ⏳ Ikke kørt endnu |
 | Restbeløb trukket via API | ⏳ Ikke kørt endnu |
@@ -68,8 +70,8 @@ seneste 60 dage.
 
 **Ja — appen skal have Shopifys godkendelse til `read_payment_mandate` og
 `write_payment_mandate`, før den kan trække restbeløbet.** Det gælder også
-en custom app, der kun er installeret på en udviklingsbutik — se dog
-**GÆT** nedenfor.
+en custom app, der endnu ikke er installeret nogen steder. Det er nu set i
+praksis, ikke kun læst (se «Set i praksis» nedenfor).
 
 Kilder (læst 2026-10-11):
 
@@ -93,11 +95,17 @@ De to kilder peger på hver sin vej (Shopify Support vs. Partner Dashboard).
 access requests*; findes der ikke et kort dér for payment mandates, skrives
 der til Shopify Support.
 
-**GÆT**: at godkendelseskravet også gælder på en udviklingsbutik.
-Dokumentationen nævner ingen undtagelse, og fejlen opstår, når appversionen
-oprettes — før appen overhovedet er installeret på en butik. Det er det
-første, beviset vil afklare: kører `shopify app deploy` igennem med de to
-scopes i `shopify.app.toml`, er svaret nej.
+**Set i praksis (2026-10-13):** Appen blev
+oprettet i Dev Dashboard under organisationen Lalatoto of Denmark med alle
+scopes fra 1.1. Shopify afviste at oprette den, så længe
+`read_payment_mandate` og `write_payment_mandate` var med. Uden de to scopes
+blev den oprettet. Det bekræfter dokumentationen: kravet gælder allerede, når
+appversionen oprettes — før appen er installeret på nogen butik, og dermed
+også for en app, der kun skal bruges på en udviklingsbutik. Den nøjagtige
+fejltekst blev ikke gemt.
+
+De to scopes er derfor taget ud af `shopify.app.toml`, indtil godkendelsen
+foreligger. Ellers fejler `shopify app deploy` på samme måde.
 
 **Konsekvens:** Uden godkendelsen kan vi oprette planen og lægge testordren,
 men ikke trække restbeløbet via API'et. Det er den største risiko i hele

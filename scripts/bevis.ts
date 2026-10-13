@@ -16,6 +16,7 @@ import {
   assertDevelopmentStore,
   configFromEnv,
   createAdminClient,
+  ShopifyGraphQLError,
   throwOnUserErrors,
   type AdminClient,
 } from "../app/lib/shopify/adminClient";
@@ -137,8 +138,25 @@ Næste skridt — læg testordren:
 `);
 }
 
+/** Fejlen Shopify giver, når appen mangler read_payment_mandate. */
+function isMandateAccessDenied(err: unknown): boolean {
+  return (
+    err instanceof ShopifyGraphQLError &&
+    Array.isArray(err.details) &&
+    err.details.some((e: any) => e?.extensions?.code === "ACCESS_DENIED" && e?.path?.includes("vaultedPaymentMethods"))
+  );
+}
+
 async function vis(client: AdminClient, args: { ordre?: string }) {
-  const data = await client.graphql(ORDER_QUERY, { id: orderGid(args.ordre) });
+  const id = orderGid(args.ordre);
+  let data: any;
+  try {
+    data = await client.graphql(ORDER_QUERY, { id });
+  } catch (err) {
+    if (!isMandateAccessDenied(err)) throw err;
+    console.warn("Appen mangler read_payment_mandate — læser ordren uden det gemte betalingsmiddel.");
+    data = await client.graphql(ORDER_QUERY, { id, medMandat: false });
+  }
   print("order", data);
   if (!data.order) throw new Error("Ordren findes ikke");
   const decision = decideCharge(data.order, { force: true });

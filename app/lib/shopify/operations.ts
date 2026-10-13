@@ -77,9 +77,13 @@ export const PUBLISHABLE_PUBLISH = /* GraphQL */ `
   }
 `;
 
-/** read_orders + read_payment_terms + ⚠ read_payment_mandate (+ read_customers for customer) */
+/**
+ * read_orders + read_payment_terms + ⚠ read_payment_mandate (+ read_customers for customer).
+ * Med `medMandat: false` udelades det gemte betalingsmiddel, så ordren kan læses
+ * uden read_payment_mandate.
+ */
 export const ORDER_QUERY = /* GraphQL */ `
-  query Ordre($id: ID!) {
+  query Ordre($id: ID!, $medMandat: Boolean = true) {
     order(id: $id) {
       id
       name
@@ -124,7 +128,7 @@ export const ORDER_QUERY = /* GraphQL */ `
       }
       paymentCollectionDetails {
         additionalPaymentCollectionUrl
-        vaultedPaymentMethods {
+        vaultedPaymentMethods @include(if: $medMandat) {
           id
           paymentInstrument {
             __typename

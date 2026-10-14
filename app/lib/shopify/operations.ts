@@ -315,9 +315,38 @@ export const SELLING_PLAN_GROUP_DELETE = /* GraphQL */ `
   }
 `;
 
-/** Butikkens id (til shop-metafelter) og den gemte stil. */
-export const SHOP_STYLE_QUERY = /* GraphQL */ `
-  query ButikStil {
-    shop { id metafield(namespace: "lalatoto_preorder", key: "style") { value } }
+
+/** Ét produkts grupper — til blokken «Forudbestilling» på produktet i admin. */
+export const PRODUCT_PREORDER_QUERY = /* GraphQL */ `
+  query ProduktForudbestilling($id: ID!) {
+    product(id: $id) {
+      id
+      title
+      requiresSellingPlan
+      sellingPlanGroups(first: 10) {
+        nodes {
+          id
+          name
+          appId
+          merchantCode
+          products(first: 20) { nodes { id title handle requiresSellingPlan } }
+          sellingPlans(first: 5) {
+            nodes {
+              id
+              category
+              billingPolicy {
+                ... on SellingPlanFixedBillingPolicy {
+                  checkoutCharge {
+                    type
+                    value { ... on SellingPlanCheckoutChargePercentageValue { percentage } }
+                  }
+                  remainingBalanceChargeExactTime
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 `;

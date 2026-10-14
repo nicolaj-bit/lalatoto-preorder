@@ -2,7 +2,19 @@
   "blocks": {
     "preorder": {
       "name": "Pre-order",
-      "info": "Texts and style are edited in the Lalatoto Forudbestilling app."
+      "info": "Shown only on products with a pre-order. Turn on pre-order on the product in the Shopify admin.",
+      "settings": {
+        "mode": { "label": "Style", "theme": "Follow the theme", "custom": "Custom style" },
+        "button_text": { "label": "Button text", "info": "Leave empty to keep the theme's own text." },
+        "badge_text": { "label": "Badge" },
+        "info_text": { "label": "Text for the customer", "info": "{dato} becomes the due date, {depositum} the amount paid now." },
+        "custom_header": "Custom style",
+        "accent": "Button and badge",
+        "accent_text": "Text on button and badge",
+        "background": "Background",
+        "text": "Text",
+        "radius": "Corner radius"
+      }
     }
   }
 }

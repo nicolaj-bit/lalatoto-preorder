@@ -1,33 +1,40 @@
-// Kald til appens server. Kundekontoens udvidelser kører i en sandkasse og
-// kender ikke appens adresse, så den står her.
+// Kald til appens server, som er en Base44-funktion (cancelPreorder).
+// Kundekontoens udvidelser kører i en sandkasse og kender ikke adressen, så
+// den står her. Sæt de to værdier, når Base44-appen er oprettet.
 //
-// Sæt APP_URL til samme adresse som SHOPIFY_APP_URL / application_url, før
-// udvidelsen udgives. Under `shopify app dev` er det tunnel-adressen.
-export const APP_URL = "https://lalatoto-preorder.example.com";
+//   POST {BASE44_ORIGIN}/api/apps/{BASE44_APP_ID}/functions/cancelPreorder
+//   { action: "check" | "cancel", orderId }
+//
+// Kunden genkendes på kundekontoens session token i Authorization-headeren.
+// Funktionen bruger tokenets kunde-id, aldrig et id fra forespørgslen.
+export const BASE44_ORIGIN = 'https://lalatoto-forudbestilling.base44.app';
+export const BASE44_APP_ID = 'SKAL-UDFYLDES';
 
-const ENDPOINT = `${APP_URL}/api/preorder-cancel`;
+const ENDPOINT = `${BASE44_ORIGIN}/api/apps/${BASE44_APP_ID}/functions/cancelPreorder`;
 
-async function authHeaders() {
+async function call(action, orderId) {
   // Hentes lige før hvert kald: tokenet udløber efter 5 minutter.
   const token = await shopify.sessionToken.get();
-  return { Authorization: `Bearer ${token}` };
+  const res = await fetch(ENDPOINT, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'X-App-Id': BASE44_APP_ID,
+    },
+    body: JSON.stringify({action, orderId}),
+  });
+  const body = await res.json().catch(() => null);
+  if (!body) throw new Error(`HTTP ${res.status}`);
+  return body;
 }
 
 /** @returns {Promise<{cancellable: boolean, refunds?: boolean, reason?: string}>} */
-export async function fetchEligibility(orderId) {
-  const res = await fetch(`${ENDPOINT}?orderId=${encodeURIComponent(orderId)}`, {
-    headers: await authHeaders(),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+export function fetchEligibility(orderId) {
+  return call('check', orderId);
 }
 
 /** @returns {Promise<{ok: boolean, refunds?: boolean, reason?: string}>} */
-export async function cancelPreorder(orderId) {
-  const res = await fetch(ENDPOINT, {
-    method: "POST",
-    headers: { ...(await authHeaders()), "Content-Type": "application/json" },
-    body: JSON.stringify({ orderId }),
-  });
-  return res.json().catch(() => ({ ok: false, reason: `HTTP ${res.status}` }));
+export function cancelPreorder(orderId) {
+  return call('cancel', orderId);
 }

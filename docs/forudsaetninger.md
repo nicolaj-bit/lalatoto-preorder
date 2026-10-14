@@ -29,10 +29,11 @@ Admin API-version i hele projektet: **2026-04**.
 | Restbeløb trukket manuelt fra admin | ✅ 2026-10-13, ordre #1003 med Bogus Gateway (se 3.5) |
 | Restbeløb trukket via API | ✅ 2026-10-14, ordre #1001 med Bogus Gateway (se 3.4) |
 | De fire fejltilfælde afprøvet (afsnit 4) | ⏳ Ikke kørt endnu — kun dokumentationen er læst |
-| Annullering i kundekontoen (4.3) | 🔧 Bygget, ikke afprøvet i butikken — kræver offentlig adresse |
-| Dashboard: forudbestillinger og stil | 🔧 Bygget. Opret/fjern og gem stil er kørt mod felt-post via koden, ikke via admin |
-| Temablok på produktsiden | 🔧 Bygget og afprøvet i Chromium på en testside, ikke i et rigtigt tema |
-| Automatisk træk på forfaldsdatoen | ⏳ Ikke bygget — kræver offentlig adresse og et planlagt job |
+| Annullering i kundekontoen (4.3) | 🔧 Knappen er bygget; serverdelen skal bygges i Base44 |
+| Forudbestilling på produktet i admin | 🔧 Bygget som blok på produktsiden. Opret/fjern er kørt mod felt-post via koden, ikke i admin |
+| Dashboard med kunder (Base44) | ⏳ Ikke bygget |
+| Temablok på produktsiden | 🔧 Bygget, stil i temaredigeringen. JavaScript afprøvet i Chromium på en testside, ikke i et rigtigt tema |
+| Automatisk træk på forfaldsdatoen | ⏳ Ikke bygget — skal være en planlagt Base44-funktion |
 | Besked ved forsinkelse og samtykke over 30 dage (1.7) | ⏳ Ikke bygget — kræver valg af mailudbyder |
 
 Koden til beviset ligger klar i `scripts/bevis.ts`. Afsnit 3 og 4 udfyldes
@@ -716,9 +717,9 @@ Mulige statusser fra `orderPaymentStatus` ([OrderPaymentStatusResult](https://sh
 - **Bygget (2026-10-14), ikke afprøvet i butikken endnu:** knappen
   «Annuller forudbestilling» i ordrens handlingsmenu i kundekontoen
   (`extensions/preorder-annuller`, valgt af Nicolaj frem for et link i
-  ordrebekræftelsen). Den kalder `app/routes/api.preorder-cancel.tsx`, som
-  godkender kaldet med kundekontoens session token og bruger tokenets `sub`
-  som kunde-id. `app/lib/preorder/cancel.ts` tillader kun annullering, når:
+  ordrebekræftelsen). Den kalder Base44-funktionen `cancelPreorder` (ikke
+  bygget endnu), som skal godkende kaldet med kundekontoens session token og
+  bruge tokenets `sub` som kunde-id. `app/lib/preorder/cancel.ts` tillader kun annullering, når:
   - ordren tilhører kunden, der er logget ind,
   - ordren har en betalingsaftale og en linje med en plan, Shopify svarer
     `category: PRE_ORDER` for (ikke et abonnement),
@@ -729,8 +730,10 @@ Mulige statusser fra `orderPaymentStatus` ([OrderPaymentStatusResult](https://sh
   (`refundMethod.originalPaymentMethodsRefund`). Lageret lægges tilbage, og
   Shopify sender kunden en mail (`notifyCustomer: true`).
 - **Forudsætninger, før knappen virker:**
-  1. Appen kører på en offentlig adresse, og `APP_URL` i
-     `extensions/preorder-annuller/src/api.js` peger på den.
+  1. Base44-funktionen findes, og `BASE44_ORIGIN`/`BASE44_APP_ID` i
+     `extensions/preorder-annuller/src/api.js` peger på den. **UKENDT**: om
+     en Base44-funktion svarer på browserens forhåndsforespørgsel (CORS
+     `OPTIONS`) fra kundekontoen.
   2. «Allow network access in checkout and account UI extensions» på
      appens API-adgangsside i Partner Dashboard (godkendes straks ifølge
      [Enable extension capabilities for customer accounts](https://shopify.dev/docs/apps/build/customer-accounts/capabilities), læst 2026-10-14).

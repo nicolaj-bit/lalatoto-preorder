@@ -6,15 +6,19 @@ purchase options*). Bygget på Shopifys officielle Remix-skabelon.
 Beviset (`scripts/bevis.ts`) viste, at vi kan sælge en vare med 0 kr. ved
 checkout og trække restbeløbet senere via API'et. Oven på det er der nu:
 
-- **Dashboard i Shopify admin:** opret og fjern forudbestillinger på
-  produkter, og vælg stil og tekster til produktsiden.
+- **Blok på produktet i Shopify admin:** slå forudbestilling til og fra med
+  dato og depositum.
 - **Temablok på produktsiden:** viser forudbestillingen og lægger varen i
-  kurven med planen. Følger temaets stil eller dashboardets egne farver.
+  kurven med planen. Stil og tekster sættes i temaredigeringen: følg temaet
+  eller egne farver.
 - **Annullering i kundekontoen:** kunden kan selv annullere og får pengene
   tilbage, hvis der er trukket noget.
 
-Det automatiske træk på forfaldsdatoen og besked ved forsinkelse er ikke
-bygget endnu.
+Alt det ovenfor ligger hos Shopify. **Serveren er en Base44-app**
+(Lalatoto Forudbestilling, ikke Club No Sleep). Den skal stå for
+annulleringen, det automatiske træk på forfaldsdatoen og et dashboard med
+kunderne. Base44-delen er ikke bygget endnu, og det er besked ved
+forsinkelse heller ikke.
 
 Læs først [`docs/forudsaetninger.md`](docs/forudsaetninger.md): krav, kilder,
 hvad Shopify opretter, og hvad der sker, når noget går galt.
@@ -30,12 +34,10 @@ hvad Shopify opretter, og hvad der sker, når noget går galt.
 | `scripts/bevis.ts` | Beviset, trin for trin mod udviklingsbutikken |
 | `tests/unit/` | Enhedstests — kører uden netværk |
 | `tests/integration/` | Integrationstest mod udviklingsbutikken |
-| `app/routes/app._index.tsx` | Dashboardet: forudbestillinger på produkter |
-| `app/routes/app.stil.tsx` | Dashboardet: stil og tekster på produktsiden |
-| `app/routes/api.preorder-cancel.tsx` | Endepunkt for kundens annullering, kaldt fra kundekontoen |
+| `extensions/preorder-produkt/` | Blokken «Forudbestilling» på produktet i admin |
 | `extensions/preorder-knap/` | Temablokken «Forudbestilling» til produktsiden |
 | `extensions/preorder-annuller/` | Knappen «Annuller forudbestilling» i kundekontoen |
-| `app/routes/`, `prisma/` | Fra skabelonen: login, sessions og webhooks |
+| `app/routes/`, `prisma/` | Fra Remix-skabelonen; bruges ikke, fordi serveren er Base44 |
 
 ---
 
@@ -119,26 +121,24 @@ dette trin.
 
 ## Tag det i brug på en butik
 
-Appen skal køre på en offentlig adresse, før dashboardet og annulleringen
-virker. Derefter:
-
-1. **Adresse i udvidelsen:** sæt `APP_URL` i
-   `extensions/preorder-annuller/src/api.js` til appens adresse, og kør
-   `shopify app deploy`.
-2. **Partner Dashboard → appen → API-adgang**
+1. **Base44:** opret Base44-appen og funktionen `cancelPreorder`. Sæt
+   `BASE44_ORIGIN` og `BASE44_APP_ID` i
+   `extensions/preorder-annuller/src/api.js`.
+2. `shopify app deploy` — sender udvidelserne og scopes til Shopify.
+3. **Partner Dashboard → appen → API-adgang**
    (`partners.shopify.com/<organisation>/apps/<app>/api_access`):
    - «Allow network access in checkout and account UI extensions», så
-     knappen i kundekontoen må kalde appen.
-   - «Protected customer data access», så kundekontoen fortæller appen,
-     hvilken kunde der er logget ind. Uden den afvises alle annulleringer.
-3. **Temaet:** *Webshop → Temaer → Tilpas → produktskabelonen →
-   Tilføj blok → Apps → Forudbestilling*. Læg blokken over
-   læg-i-kurv-knappen.
-4. **Kundekonti:** *Indstillinger → Kundekonti* skal stå til de nye
-   kundekonti. Knappen «Annuller forudbestilling» kommer automatisk på
-   ordrer, der kan annulleres.
-5. **Dashboardet:** åbn appen i admin, vælg et produkt og en dato.
-   Produktet kan derefter kun købes som forudbestilling.
+     knappen i kundekontoen må kalde Base44.
+   - «Protected customer data access», så kundekontoen fortæller, hvilken
+     kunde der er logget ind. Uden den afvises alle annulleringer.
+4. **Produktet:** åbn produktet i admin. Blokken «Forudbestilling» ligger
+   nederst (ellers: *⋯ → Tilpas blokke*). Vælg dato og depositum, og tryk
+   «Slå forudbestilling til».
+5. **Temaet:** *Webshop → Temaer → Tilpas → produktskabelonen → Tilføj
+   blok → Apps → Forudbestilling*. Læg den over læg-i-kurv-knappen, og vælg
+   stil og tekster i blokkens indstillinger.
+6. **Kundekonti:** *Indstillinger → Kundekonti* skal stå til de nye
+   kundekonti.
 
 ---
 

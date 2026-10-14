@@ -2,7 +2,19 @@
   "blocks": {
     "preorder": {
       "name": "Forudbestilling",
-      "info": "Tekster og stil redigeres i appen Lalatoto Forudbestilling."
+      "info": "Vises kun på produkter med forudbestilling. Slå forudbestilling til på produktet i Shopify admin.",
+      "settings": {
+        "mode": { "label": "Stil", "theme": "Følg temaet", "custom": "Egen stil" },
+        "button_text": { "label": "Tekst på knappen", "info": "Tom = temaets egen tekst, fx «Læg i kurv»." },
+        "badge_text": { "label": "Mærke" },
+        "info_text": { "label": "Tekst til kunden", "info": "{dato} bliver til datoen for restbeløbet, {depositum} til beløbet ved køb." },
+        "custom_header": "Egen stil",
+        "accent": "Knap og mærke",
+        "accent_text": "Tekst på knap og mærke",
+        "background": "Baggrund",
+        "text": "Tekst",
+        "radius": "Runding på hjørner"
+      }
     }
   }
 }

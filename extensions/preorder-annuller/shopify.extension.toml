@@ -19,6 +19,6 @@ module = "./src/CancelModal.jsx"
 target = "customer-account.order.action.render"
 
 [extensions.capabilities]
-# Kald til appens server (app/routes/api.preorder-cancel.tsx). Kræver
+# Kald til Base44-funktionen cancelPreorder (se src/api.js). Kræver
 # «Allow network access» under API-adgang i Partner Dashboard.
 network_access = true

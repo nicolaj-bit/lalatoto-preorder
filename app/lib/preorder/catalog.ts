@@ -1,4 +1,5 @@
-// Forudbestillinger på produkter: vis, opret og fjern. Bruges af dashboardet.
+// Forudbestillinger på produkter: vis, opret og fjern. Bruges af blokken
+// «Forudbestilling» på produktet i admin (extensions/preorder-produkt).
 //
 // En forudbestilling er én selling plan group fra appen med én PRE_ORDER-plan,
 // knyttet til ét produkt. Når den oprettes, sker tre ting:
@@ -12,6 +13,7 @@ import {
   METAFIELDS_DELETE,
   METAFIELDS_SET,
   PREORDER_GROUPS_QUERY,
+  PRODUCT_PREORDER_QUERY,
   PREORDER_PRODUCT_UPDATE,
   SELLING_PLAN_GROUP_CREATE,
   SELLING_PLAN_GROUP_DELETE,
@@ -73,6 +75,16 @@ export function summarizeGroups(groups: GroupNode[]): PreorderSummary[] {
 export async function listPreorders(graphql: Graphql): Promise<PreorderSummary[]> {
   const data = await graphql<{ sellingPlanGroups: { nodes: GroupNode[] } }>(PREORDER_GROUPS_QUERY);
   return summarizeGroups(data.sellingPlanGroups.nodes);
+}
+
+/** Forudbestillingen på ét produkt, eller null. */
+export async function productPreorder(graphql: Graphql, productId: string): Promise<PreorderSummary | null> {
+  const data = await graphql<{ product: { sellingPlanGroups: { nodes: GroupNode[] } } | null }>(
+    PRODUCT_PREORDER_QUERY,
+    { id: productId },
+  );
+  if (!data.product) return null;
+  return summarizeGroups(data.product.sellingPlanGroups.nodes)[0] ?? null;
 }
 
 /** Det, temablokken læser i lalatoto_preorder.info. */

@@ -1,0 +1,17 @@
+{
+  "name": "PreorderCharge",
+  "type": "object",
+  "description": "Ét forsøg på at trække restbeløbet på en forudbestilling. Skrives kun af funktionen chargeDuePreorders. Ingen kort- eller kundedata.",
+  "properties": {
+    "order_id": { "type": "string", "description": "Shopify-ordrens gid" },
+    "order_name": { "type": "string", "description": "Ordrenummer, fx #1001" },
+    "schedule_id": { "type": "string", "description": "Betalingsplanens gid (PaymentSchedule)" },
+    "attempt": { "type": "number", "description": "Forsøgsnummer, 1 og op. Indgår i idempotensnøglen" },
+    "status": { "type": "string", "description": "Shopifys status: INITIATED, PROCESSING, PENDING, PURCHASED, ERROR …" },
+    "payment_reference_id": { "type": "string", "description": "Shopifys paymentReferenceId for trækket" },
+    "message": { "type": "string", "description": "Fejltekst fra Shopify, hvis trækket blev afvist" },
+    "attempted_at": { "type": "string", "format": "date-time" }
+  },
+  "required": ["order_id", "schedule_id", "attempt", "status", "attempted_at"],
+  "rls": { "create": { "user_condition": { "role": "admin" } }, "read": { "user_condition": { "role": "admin" } }, "update": { "user_condition": { "role": "admin" } }, "delete": { "user_condition": { "role": "admin" } } }
+}

@@ -16,11 +16,13 @@ hvad Shopify opretter, og hvad der sker, når noget går galt.
 
 | Sti | Indhold |
 |---|---|
-| `app/lib/preorder/` | Logikken: beløb i øre, datoer i dansk tid, selling plan, beslutning om træk |
+| `app/lib/preorder/` | Logikken: beløb i øre, datoer i dansk tid, selling plan, beslutning om træk og annullering |
 | `app/lib/shopify/` | GraphQL-kald og en lille Admin API-klient til scripts |
 | `scripts/bevis.ts` | Beviset, trin for trin mod udviklingsbutikken |
 | `tests/unit/` | Enhedstests — kører uden netværk |
 | `tests/integration/` | Integrationstest mod udviklingsbutikken |
+| `app/routes/api.preorder-cancel.tsx` | Endepunkt for kundens annullering, kaldt fra kundekontoen |
+| `extensions/preorder-annuller/` | Knappen «Annuller forudbestilling» i kundekontoen |
 | `app/routes/`, `prisma/` | Fra skabelonen: login, sessions og webhooks |
 
 ---

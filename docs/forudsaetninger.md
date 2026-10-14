@@ -708,8 +708,39 @@ Mulige statusser fra `orderPaymentStatus` ([OrderPaymentStatusResult](https://sh
   forudbestillinger i de læste kilder.
 - **Det betyder i praksis:** Kundens annullering ender som et
   `orderCancel`-kald fra appen (samme som 4.4, med `reason: CUSTOMER`).
-- **UKENDT:** Om kunden selv kan annullere fra sin kundekonto i Shopify.
-- **Afprøves:** `npm run bevis -- annuller --ordre <id> --aarsag CUSTOMER`.
+- **Bygget (2026-10-14), ikke afprøvet i butikken endnu:** knappen
+  «Annuller forudbestilling» i ordrens handlingsmenu i kundekontoen
+  (`extensions/preorder-annuller`, valgt af Nicolaj frem for et link i
+  ordrebekræftelsen). Den kalder `app/routes/api.preorder-cancel.tsx`, som
+  godkender kaldet med kundekontoens session token og bruger tokenets `sub`
+  som kunde-id. `app/lib/preorder/cancel.ts` tillader kun annullering, når:
+  - ordren tilhører kunden, der er logget ind,
+  - ordren har en betalingsaftale og en linje med en plan, Shopify svarer
+    `category: PRE_ORDER` for (ikke et abonnement),
+  - ordren ikke er annulleret,
+  - varen ikke er sendt (`SCHEDULED`, `UNFULFILLED` eller `ON_HOLD`).
+
+  Er der trukket penge, refunderes de til det oprindelige betalingsmiddel
+  (`refundMethod.originalPaymentMethodsRefund`). Lageret lægges tilbage, og
+  Shopify sender kunden en mail (`notifyCustomer: true`).
+- **Forudsætninger, før knappen virker:**
+  1. Appen kører på en offentlig adresse, og `APP_URL` i
+     `extensions/preorder-annuller/src/api.js` peger på den.
+  2. «Allow network access in checkout and account UI extensions» på
+     appens API-adgangsside i Partner Dashboard (godkendes straks ifølge
+     [Enable extension capabilities for customer accounts](https://shopify.dev/docs/apps/build/customer-accounts/capabilities), læst 2026-10-14).
+  3. Adgang til beskyttede kundedata. Ellers har tokenet ingen `sub`, og
+     appen afviser alle annulleringer (`NOT_OWNER`)
+     ([Session Token API](https://shopify.dev/docs/api/customer-account-ui-extensions/2026-07/target-apis/platform-apis/session-token-api), læst 2026-10-14).
+  4. Butikken bruger de nye kundekonti, ikke de klassiske.
+- **Kontrolleret mod felt-post** (kun læsning): forespørgslerne svarer, og
+  `decideCancel` siger ja til #1001 og #1003 (forudbestillinger) og nej til
+  #1002 (almindeligt køb).
+- **UKENDT:** Om `orderCancel` med refusion virker på en ordre, hvis
+  restbeløb er trukket via betalingsaftalen.
+- **Afprøves:** Log ind som kunden på felt-post, åbn en forudbestilling, og
+  tryk «Annuller forudbestilling». Uden kundekonto:
+  `npm run bevis -- annuller --ordre <id> --aarsag CUSTOMER`.
 
 ### 4.4 Vi annullerer ordren
 

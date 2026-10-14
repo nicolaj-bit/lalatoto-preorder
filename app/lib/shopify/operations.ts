@@ -227,3 +227,26 @@ export const CLEANUP = /* GraphQL */ `
     productDelete(input: { id: $productId }) { deletedProductId userErrors { field message } }
   }
 `;
+
+/** read_orders + read_customers. Det, decideCancel skal bruge. */
+export const CANCEL_ORDER_QUERY = /* GraphQL */ `
+  query OrdreTilAnnullering($id: ID!) {
+    order(id: $id) {
+      id
+      name
+      cancelledAt
+      displayFulfillmentStatus
+      customer { id }
+      totalReceivedSet { shopMoney { amount currencyCode } }
+      paymentTerms { id }
+      lineItems(first: 50) { nodes { sellingPlan { sellingPlanId } } }
+    }
+  }
+`;
+
+/** read_purchase_options. Linjen kender kun planens id, ikke om det er en forudbestilling. */
+export const SELLING_PLAN_CATEGORIES = /* GraphQL */ `
+  query PlanKategorier($ids: [ID!]!) {
+    nodes(ids: $ids) { ... on SellingPlan { id category } }
+  }
+`;

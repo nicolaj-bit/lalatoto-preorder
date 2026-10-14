@@ -1,0 +1,24 @@
+# Knappen «Annuller forudbestilling» på ordren i kundekontoen.
+# Shopify kræver, at kunden kan annullere en forudbestilling inde i løsningen
+# (docs/forudsaetninger.md afsnit 1.7).
+api_version = "2026-07"
+
+[[extensions]]
+name = "Annuller forudbestilling"
+handle = "preorder-annuller"
+type = "ui_extension"
+
+# Knappen i ordrens handlingsmenu. Vises kun, når appen siger, at ordren kan annulleres.
+[[extensions.targeting]]
+module = "./src/MenuItem.jsx"
+target = "customer-account.order.action.menu-item.render"
+
+# Bekræftelsen, der åbner, når kunden trykker på knappen.
+[[extensions.targeting]]
+module = "./src/CancelModal.jsx"
+target = "customer-account.order.action.render"
+
+[extensions.capabilities]
+# Kald til appens server (app/routes/api.preorder-cancel.tsx). Kræver
+# «Allow network access» under API-adgang i Partner Dashboard.
+network_access = true

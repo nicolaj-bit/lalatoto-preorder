@@ -23,7 +23,7 @@ Admin API-version i hele projektet: **2026-04**.
 | App oprettet i Dev Dashboard | ⚠️ 2026-10-13 — i butikkens organisation ved en fejl; slettet og oprettes forfra under partnerorganisationen |
 | Udviklingsbutik | ✅ `felt-post.myshopify.com` |
 | `read_payment_mandate`/`write_payment_mandate` i partnerorganisationen | ❌ Afvist: «Indeholder ugyldige omfang» (se 1.2) |
-| Godkendelse fra Shopify | ⏳ Sag åben hos Shopify Support |
+| Godkendelse fra Shopify | ⏳ 2026-10-14: Support har bekræftet vejen — tre ansøgninger i Partner Dashboard (se 1.2, punkt 5) |
 | Selling plan group + testprodukt oprettet på udviklingsbutik | ✅ 2026-10-13 på `felt-post` (se 3.1) |
 | Testordre lagt igennem | ✅ 2026-10-13, ordre #1001 — med Bogus Gateway, ikke Shopify Payments (se 3.2) |
 | Restbeløb trukket manuelt fra admin | ✅ 2026-10-13, ordre #1003 med Bogus Gateway (se 3.5) |
@@ -131,6 +131,25 @@ oprettes forfra under partnerorganisationen, hvor udviklingsbutikken
 behandler de to scopes ens i de to slags organisationer. **UKENDT**: om
 appen i butikkens organisation reelt kunne have trukket penge — den blev
 aldrig afprøvet.
+
+5. **Shopify Support, rådgiveren Khalid (chat, 2026-10-14)** bekræftede, at
+   appen kvalificerer sig som en app med udskudt køb, og forklarede fejlen i
+   punkt 4: de to scopes er begrænsede og kan ikke tilføjes i Dev Dashboard.
+   De skal søges i **Partner Dashboard** som tre separate ansøgninger, der
+   behandles samlet:
+   1. Læs alle ordrer (`read_all_orders`)
+   2. Abonnements-API (`write_customer_payment_methods`)
+   3. Betalingsaftale-API (`write_payment_mandate` — giver automatisk
+      `read_payment_mandate`)
+
+   Sagsnumrene fra de tre ansøgninger skal sendes til Support i samme chat,
+   så de kan knyttes sammen. **Godkendelse gælder pr. app:** en godkendelse
+   af testappen overføres ikke til produktionsappen til lalatoto.dk, som skal
+   have sine egne tre ansøgninger med sit eget Client ID.
+
+   Bemærk: Support nævner `write_customer_payment_methods`, mens listen i 1.1
+   har `read_customer_payment_methods`. **UKENDT**: om begge kommer med
+   abonnements-API'et.
 
 De to scopes er taget ud af `shopify.app.toml`, så den matcher appen i
 partnerorganisationen.
@@ -642,7 +661,8 @@ Mulige statusser fra `orderPaymentStatus` ([OrderPaymentStatusResult](https://sh
 ## 5. Åbne spørgsmål, der skal afklares først
 
 1. **Får appen `read_payment_mandate` og `write_payment_mandate`?** Uden dem
-   intet automatisk træk. Sag åben hos Shopify Support. Indtil da kan
+   intet automatisk træk. Søges i Partner Dashboard (1.2, punkt 5) — én
+   gang for testappen og én gang for produktionsappen. Indtil da kan
    butikken trække manuelt fra admin (3.5).
 2. ~~Hvilken betalingsudbyder bruger lalatoto.dk?~~ Afklaret: kun Shopify
    Payments, som understøtter forudbestilling (afsnit 1.4).

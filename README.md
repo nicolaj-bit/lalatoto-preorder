@@ -86,13 +86,15 @@ Appen er en custom app: ingen App Store, intet review.
 2. Opret en udviklingsbutik under *Dev stores* i Dev Dashboard (samme
    organisation). Slå Shopify Payments til i testtilstand under
    *Indstillinger → Betalinger*.
-3. `shopify app deploy` — sender scopes og webhooks til Shopify.
-   - `read_payment_mandate`/`write_payment_mandate` står ikke i
-     `shopify.app.toml`: Dev Dashboard afviser dem med «Indeholder ugyldige
-     omfang», indtil Shopify har godkendt dem. Uden dem kan beviset oprette
-     plan og ordre, men ikke trække restbeløbet. Se `docs/forudsaetninger.md`
-     afsnit 1.2.
-4. `shopify app dev` og installér appen på udviklingsbutikken, når CLI'en
+3. **Før deploy på en ny app:** søg `read_all_orders`, abonnements-API'et og
+   betalingsaftale-API'et på
+   `partners.shopify.com/<organisation>/apps/<app>/api_access`. Siden findes
+   ikke i menuen. Uden godkendelse afviser Dev Dashboard versionen med
+   «Indeholder ugyldige omfang». Se `docs/forudsaetninger.md` afsnit 1.2.
+4. `shopify app deploy` — sender scopes og webhooks til Shopify. Er appen
+   allerede installeret, skal butikken godkende de nye scopes i admin under
+   *Apps*.
+5. `shopify app dev` og installér appen på udviklingsbutikken, når CLI'en
    viser linket.
 
 Senere på en rigtig butik: vælg *Custom distribution* for appen i Dev
@@ -111,7 +113,7 @@ export SHOPIFY_API_SECRET=…
 npm run bevis -- opret --dato 2026-12-01      # produkt + forudbestillingsplan
 # … læg testordren i butikken (scriptet skriver hvordan) …
 npm run bevis -- vis --ordre <ordre-id>       # betalingsaftale og forfaldsdato
-npm run bevis -- traek --ordre <ordre-id> --foer-tid   # træk restbeløbet nu
+npm run bevis -- traek --ordre <ordre-id> --foer-tid   # træk restbeløbet nu (--med-beloeb kun på Plus)
 npm run bevis -- annuller --ordre <ordre-id>  # til fejltilfældene
 npm run bevis -- ryd-op                       # slet produkt og plan igen
 

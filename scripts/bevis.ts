@@ -2,7 +2,7 @@
 //
 //   npm run bevis -- opret --dato 2026-12-01 [--pris 499.00]
 //   npm run bevis -- vis --ordre 1234567890
-//   npm run bevis -- traek --ordre 1234567890 [--foer-tid] [--forsoeg 2] [--kun-autoriser]
+//   npm run bevis -- traek --ordre 1234567890 [--foer-tid] [--forsoeg 2] [--kun-autoriser] [--med-beloeb]
 //   npm run bevis -- annuller --ordre 1234567890 [--aarsag CUSTOMER] [--refunder]
 //   npm run bevis -- ryd-op
 //
@@ -165,7 +165,7 @@ async function vis(client: AdminClient, args: { ordre?: string }) {
 
 async function traek(
   client: AdminClient,
-  args: { ordre?: string; "foer-tid"?: boolean; forsoeg?: string; "kun-autoriser"?: boolean },
+  args: { ordre?: string; "foer-tid"?: boolean; forsoeg?: string; "kun-autoriser"?: boolean; "med-beloeb"?: boolean },
 ) {
   const id = orderGid(args.ordre);
   const before = await client.graphql(ORDER_QUERY, { id });
@@ -174,6 +174,8 @@ async function traek(
     force: Boolean(args["foer-tid"]),
     attempt: args.forsoeg ? Number(args.forsoeg) : 1,
     autoCapture: !args["kun-autoriser"],
+    // amount må kun sendes fra en Shopify Plus-butik. Uden trækker Shopify planens restbeløb.
+    sendAmount: Boolean(args["med-beloeb"]),
   });
   print("decideCharge", decision);
   if (!decision.ok) return;
@@ -229,6 +231,7 @@ async function main() {
       forsoeg: { type: "string" },
       "foer-tid": { type: "boolean" },
       "kun-autoriser": { type: "boolean" },
+      "med-beloeb": { type: "boolean" },
       aarsag: { type: "string" },
       refunder: { type: "boolean" },
     },

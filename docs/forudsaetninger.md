@@ -23,11 +23,11 @@ Admin API-version i hele projektet: **2026-04**.
 | App oprettet i Dev Dashboard | ⚠️ 2026-10-13 — i butikkens organisation ved en fejl; slettet og oprettes forfra under partnerorganisationen |
 | Udviklingsbutik | ✅ `felt-post.myshopify.com` |
 | `read_payment_mandate`/`write_payment_mandate` i partnerorganisationen | ❌ Afvist: «Indeholder ugyldige omfang» (se 1.2) |
-| Godkendelse fra Shopify | ⏳ Sag åben hos Shopify Support |
+| Godkendelse fra Shopify | ✅ 2026-10-14 for testappen — godkendt straks i Partner Dashboard (se 1.2, punkt 6). Produktionsappen skal søge selv |
 | Selling plan group + testprodukt oprettet på udviklingsbutik | ✅ 2026-10-13 på `felt-post` (se 3.1) |
 | Testordre lagt igennem | ✅ 2026-10-13, ordre #1001 — med Bogus Gateway, ikke Shopify Payments (se 3.2) |
 | Restbeløb trukket manuelt fra admin | ✅ 2026-10-13, ordre #1003 med Bogus Gateway (se 3.5) |
-| Restbeløb trukket via API | ⏳ Ikke kørt endnu — kræver `write_payment_mandate` |
+| Restbeløb trukket via API | ✅ 2026-10-14, ordre #1001 med Bogus Gateway (se 3.4) |
 | De fire fejltilfælde afprøvet (afsnit 4) | ⏳ Ikke kørt endnu — kun dokumentationen er læst |
 
 Koden til beviset ligger klar i `scripts/bevis.ts`. Afsnit 3 og 4 udfyldes
@@ -132,12 +132,42 @@ behandler de to scopes ens i de to slags organisationer. **UKENDT**: om
 appen i butikkens organisation reelt kunne have trukket penge — den blev
 aldrig afprøvet.
 
-De to scopes er taget ud af `shopify.app.toml`, så den matcher appen i
-partnerorganisationen.
+5. **Shopify Support, rådgiveren Khalid (chat, 2026-10-14)** bekræftede, at
+   appen kvalificerer sig som en app med udskudt køb, og forklarede fejlen i
+   punkt 4: de to scopes er begrænsede og kan ikke tilføjes i Dev Dashboard.
+   De skal søges i **Partner Dashboard** som tre separate ansøgninger, der
+   behandles samlet:
+   1. Læs alle ordrer (`read_all_orders`)
+   2. Abonnements-API (`write_customer_payment_methods`)
+   3. Betalingsaftale-API (`write_payment_mandate` — giver automatisk
+      `read_payment_mandate`)
 
-**Konsekvens:** Beviset kan oprette plan og produkt og lægge testordren, men
-ikke trække restbeløbet, før Shopify godkender de to scopes. Sagen hos
-Shopify Support skal have fejlteksten fra punkt 4.
+   Sagsnumrene fra de tre ansøgninger skal sendes til Support i samme chat,
+   så de kan knyttes sammen. **Godkendelse gælder pr. app:** en godkendelse
+   af testappen overføres ikke til produktionsappen til lalatoto.dk, som skal
+   have sine egne tre ansøgninger med sit eget Client ID.
+
+   Bemærk: Support nævner `write_customer_payment_methods`, mens listen i 1.1
+   har `read_customer_payment_methods`. **UKENDT**: om begge kommer med
+   abonnements-API'et.
+
+6. **Godkendt 2026-10-14.** Siden findes ikke i menuen: et klik på appen i
+   Partner Dashboard sender videre til Dev Dashboard. Den direkte adresse
+   virker: `partners.shopify.com/<organisation>/apps/<app>/api_access`
+   (her `…/3932028/apps/434972327937/api_access`). Alle tre kort viste
+   «Du har nu adgang» med det samme, uden sagsnumre.
+   Derefter skulle scopes i en ny appversion (`lalatoto-forudbestilling-3`),
+   og **felt-post skulle selv godkende opdateringen** i admin under Apps.
+   Først derefter viste token-svaret de nye scopes:
+
+   ```
+   write_products,write_purchase_options,write_orders,read_all_orders,read_customers,read_payment_terms,write_payment_mandate,write_publications
+   ```
+
+   `read_payment_mandate` står ikke for sig selv, fordi `write_payment_mandate`
+   dækker læsning — det gemte kort kunne læses.
+
+`shopify.app.toml` har nu samme scopes som version 3.
 
 ### 1.3 Skal butikken godkendes?
 
@@ -255,9 +285,8 @@ men skal være med, før appen tages i brug.
 
 ## 3. Beviset: hvad Shopify opretter
 
-> ✅ **3.1–3.3 og 3.5 er kørt** (2026-10-13), dog uden det gemte
-> betalingsmiddel, som kræver `read_payment_mandate`. ⏳ 3.4 er ikke kørt:
-> der står, hvad kaldene er, og hvad dokumentationen siger, vi vil se.
+> ✅ **3.1–3.5 er kørt** (2026-10-13 og 2026-10-14) mod felt-post med
+> Bogus Gateway. Shopify Payments er ikke afprøvet.
 
 ### 3.1 Planen
 
@@ -492,15 +521,77 @@ Gateway.
 Kilde: [orderCreateMandatePayment](https://shopify.dev/docs/api/admin-graphql/2026-04/payloads/OrderCreateMandatePaymentPayload)
 og [About pre-order and TBYB – Charging the remaining balance](https://shopify.dev/docs/apps/build/purchase-options/deferred) (læst 2026-10-11).
 
-**Idempotensnøglen** er `preorder-<ordre>-<plan>-<forsøg>`. Kaldes der to
+**Idempotensnøglen** er `po-<ordre>-<plan>-<forsøg>` (højst 32 tegn — ellers en hash af ordre og plan). Kaldes der to
 gange med samme nøgle, returnerer Shopify det første resultat i stedet for at
 trække igen. Et bevidst nyt forsøg efter en afvisning får et nyt forsøgsnummer.
 
 `autoCapture: false` autoriserer kun beløbet, så det kan trækkes senere
 (`--kun-autoriser`).
 
-**Udfyldes**: rå svar fra alle fire skridt.
+**Kørt 2026-10-14** på ordre `#1001` (`gid://shopify/Order/8234472341846`)
+med `npm run bevis -- traek --ordre 8234472341846 --foer-tid`.
 
+**Skridt 1 — det gemte betalingsmiddel** (nu læsbart):
+
+```json
+"vaultedPaymentMethods": [{
+  "id": "gid://shopify/PaymentMandate/3e0a1afe30cf040276afd9a516478b5f",
+  "paymentInstrument": { "__typename": "VaultCreditCard", "brand": "Bogus",
+    "lastDigits": "1", "expiryMonth": 9, "expiryYear": 2028, "expired": false }
+}]
+```
+
+**To afvisninger undervejs, som koden nu tager højde for:**
+
+1. **`amount` kræver Shopify Plus.** Første kald gav `ACCESS_DENIED`:
+   «The API client must be installed on a Shopify Plus store to use the
+   amount field.» Uden `amount` trækker Shopify hele restbeløbet på den
+   betalingsplan, `paymentScheduleId` peger på. `decideCharge` sender derfor
+   kun beløbet med `sendAmount` (`--med-beloeb`). Uden det nægter den at
+   trække, hvis ordrens udestående er *mindre* end planens restbeløb (fx
+   efter en delvis refusion), for så kan beløbet ikke begrænses
+   (`AMOUNT_MISMATCH`). **UKENDT**: om lalatoto.dk er på Plus.
+2. **Idempotensnøglen må højst være 32 tegn.** «Idempotency key should be
+   less than or equal to 32 characters long.» Den gamle nøgle
+   `preorder-8234472341846-90087293270-1` var 36. Den nye er
+   `po-<ordre>-<plan>-<forsøg>` og falder tilbage til en hash, hvis den
+   bliver for lang.
+
+**Skridt 2 — `orderCreateMandatePayment`:**
+
+```json
+{
+  "job": { "id": "gid://shopify/Job/4c3351d4-71d1-4da0-be99-1a2d86935458", "done": false },
+  "paymentReferenceId": "8234472341846/po-8234472341846-90087293270-1",
+  "userErrors": []
+}
+```
+
+**Skridt 3 — `orderPaymentStatus`:**
+
+```json
+{
+  "status": "PURCHASED",
+  "errorMessage": null,
+  "transactions": [{ "kind": "SALE", "status": "SUCCESS",
+    "amountSet": { "shopMoney": { "amount": "548.0", "currencyCode": "DKK" } } }]
+}
+```
+
+**Skridt 4 — ordren bagefter:** `displayFinancialStatus: PAID`,
+`totalReceivedSet` 548,00, `totalOutstandingSet` 0,00, planen har
+`completedAt: 2026-10-14T18:30:39Z` og `balanceDue` 0,00. Én transaktion:
+`SALE`, `SUCCESS`, `gateway: bogus`, `test: true`, 548,00 DKK.
+
+**Samme kald igen** med samme nøgle gav `userErrors`: «payment schedule
+amount must be greater than zero.» Der blev ikke trukket igen. Shopify
+stopper altså et nyt træk på en betalt plan. **UKENDT**: om samme nøgle
+returnerer det første resultat, mens den første betaling stadig behandles —
+det er det tilfælde, nøglen er til for.
+
+Status `PURCHASED` er ikke nævnt i dokumentationens beskrivelse af
+forløbet. `traek` venter, så længe status er `INITIATED`, `PROCESSING` eller
+`PENDING`, og stoppede korrekt her.
 
 ### 3.5 Manuelt træk fra admin (uden appen)
 
@@ -641,9 +732,11 @@ Mulige statusser fra `orderPaymentStatus` ([OrderPaymentStatusResult](https://sh
 
 ## 5. Åbne spørgsmål, der skal afklares først
 
-1. **Får appen `read_payment_mandate` og `write_payment_mandate`?** Uden dem
-   intet automatisk træk. Sag åben hos Shopify Support. Indtil da kan
-   butikken trække manuelt fra admin (3.5).
+1. ~~Får appen `read_payment_mandate` og `write_payment_mandate`?~~ Ja, for
+   testappen (1.2, punkt 6). Produktionsappen skal søge selv.
+5. **Er lalatoto.dk på Shopify Plus?** Kun Plus må angive beløbet i
+   `orderCreateMandatePayment` (3.4). Uden Plus trækkes altid hele planens
+   restbeløb.
 2. ~~Hvilken betalingsudbyder bruger lalatoto.dk?~~ Afklaret: kun Shopify
    Payments, som understøtter forudbestilling (afsnit 1.4).
 3. **Kan MobilePay bruges?** Ifølge dokumentationen sandsynligvis ikke.

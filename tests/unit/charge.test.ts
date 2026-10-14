@@ -54,12 +54,23 @@ describe("gidTail / idempotencyKey", () => {
     const a = idempotencyKey("gid://shopify/Order/1001", "gid://shopify/PaymentSchedule/88");
     const b = idempotencyKey("gid://shopify/Order/1001", "gid://shopify/PaymentSchedule/88");
     expect(a).toBe(b);
-    expect(a).toBe("preorder-1001-88-1");
+    expect(a).toBe("po-1001-88-1");
   });
 
   it("et nyt forsøg giver en ny nøgle", () => {
-    expect(idempotencyKey("gid://shopify/Order/1001", "gid://shopify/PaymentSchedule/88", 2)).toBe("preorder-1001-88-2");
+    expect(idempotencyKey("gid://shopify/Order/1001", "gid://shopify/PaymentSchedule/88", 2)).toBe("po-1001-88-2");
     expect(() => idempotencyKey("gid://shopify/Order/1001", "gid://shopify/PaymentSchedule/88", 0)).toThrow();
+  });
+
+  it("holder sig under Shopifys grænse på 32 tegn, også med lange id'er", () => {
+    // Id'erne fra felt-post (ordre #1001) gav 36 tegn med det gamle format.
+    const kort = idempotencyKey("gid://shopify/Order/8234472341846", "gid://shopify/PaymentSchedule/90087293270");
+    expect(kort).toBe("po-8234472341846-90087293270-1");
+    const lang = idempotencyKey("gid://shopify/Order/823447234184612345", "gid://shopify/PaymentSchedule/9008729327012345", 12);
+    expect(lang.length).toBeLessThanOrEqual(32);
+    expect(lang).toMatch(/^po-[0-9a-f]+-12$/);
+    expect(idempotencyKey("gid://shopify/Order/823447234184612345", "gid://shopify/PaymentSchedule/9008729327012345", 12)).toBe(lang);
+    expect(idempotencyKey("gid://shopify/Order/823447234184612345", "gid://shopify/PaymentSchedule/9008729327012345", 13)).not.toBe(lang);
   });
 });
 
@@ -72,11 +83,16 @@ describe("decideCharge", () => {
       id: "gid://shopify/Order/1001",
       mandateId: "gid://shopify/PaymentMandate/55",
       paymentScheduleId: "gid://shopify/PaymentSchedule/88",
-      idempotencyKey: "preorder-1001-88-1",
-      amount: { amount: "499.00", currencyCode: "DKK" },
+      idempotencyKey: "po-1001-88-1",
       autoCapture: true,
     });
+    expect(d.expectedAmount).toEqual({ amount: "499.00", currencyCode: "DKK" });
     expect(d.warnings).toEqual([]);
+  });
+
+  it("sender kun beløbet, når det er bedt om (kræver Shopify Plus)", () => {
+    const d = decideCharge(order(), { now: afterDue, sendAmount: true });
+    expect(d.ok && d.input.amount).toEqual({ amount: "499.00", currencyCode: "DKK" });
   });
 
   it("trækker ikke før forfald — medmindre beviset tvinger det", () => {
@@ -102,9 +118,17 @@ describe("decideCharge", () => {
   it("trækker højst ordrens udestående, også hvis planen siger mere (fx efter delvis refusion)", () => {
     const d = decideCharge(
       order({ totalOutstandingSet: { shopMoney: { amount: "399.00", currencyCode: "DKK" } } }),
-      { now: afterDue },
+      { now: afterDue, sendAmount: true },
     );
     expect(d.ok && d.input.amount).toEqual({ amount: "399.00", currencyCode: "DKK" });
+  });
+
+  it("stopper uden beløb, når udestående er mindre end planens restbeløb", () => {
+    const d = decideCharge(
+      order({ totalOutstandingSet: { shopMoney: { amount: "399.00", currencyCode: "DKK" } } }),
+      { now: afterDue },
+    );
+    expect(d).toMatchObject({ ok: false, reason: "AMOUNT_MISMATCH" });
   });
 
   it("trækker intet, når intet er udestående", () => {

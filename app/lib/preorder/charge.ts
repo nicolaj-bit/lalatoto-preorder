@@ -6,6 +6,7 @@
 // Det er her, de dyre fejl ville opstå (trække to gange, trække for meget,
 // trække fra en annulleret ordre), så det er også her, testene er tættest.
 
+import { createHash } from "node:crypto";
 import { fromMinor, toMinor, type Money } from "./money";
 import { cardExpiresBefore, isDue } from "./dates";
 
@@ -52,9 +53,12 @@ export type ChargeDecision =
         mandateId: string;
         paymentScheduleId: string;
         idempotencyKey: string;
-        amount: Money;
+        /** Kun med sendAmount. Shopify tillader feltet alene på Shopify Plus. */
+        amount?: Money;
         autoCapture: boolean;
       };
+      /** Det beløb, Shopify forventes at trække — til kontrol bagefter. */
+      expectedAmount: Money;
       warnings: string[];
     }
   | { ok: false; reason: ChargeBlocker; message: string };
@@ -65,6 +69,7 @@ export type ChargeBlocker =
   | "ALREADY_PAID"
   | "NOT_DUE"
   | "NOTHING_OUTSTANDING"
+  | "AMOUNT_MISMATCH"
   | "NO_MANDATE";
 
 /** Sidste del af et Shopify-gid: "gid://shopify/Order/123" → "123". */
@@ -79,12 +84,23 @@ export function gidTail(gid: string): string {
  * giver altid samme nøgle. Kører et job to gange, returnerer Shopify det
  * første resultat i stedet for at trække igen. Et bevidst nyt forsøg efter en
  * afvisning skal have et nyt forsøgsnummer.
+ *
+ * Shopify afviser nøgler over 32 tegn. Nøglen er læsbar («po-<ordre>-<plan>-<forsøg>»),
+ * når den kan være det; ellers erstattes ordre og plan af en hash af dem.
  */
+export const IDEMPOTENCY_KEY_MAX = 32;
+
 export function idempotencyKey(orderId: string, scheduleId: string, attempt = 1): string {
   if (!Number.isInteger(attempt) || attempt < 1) {
     throw new Error(`Forsøgsnummer skal være et positivt heltal, fik ${attempt}`);
   }
-  return `preorder-${gidTail(orderId)}-${gidTail(scheduleId)}-${attempt}`;
+  const order = gidTail(orderId);
+  const schedule = gidTail(scheduleId);
+  const readable = `po-${order}-${schedule}-${attempt}`;
+  if (readable.length <= IDEMPOTENCY_KEY_MAX) return readable;
+  const suffix = `-${attempt}`;
+  const hash = createHash("sha256").update(`${order}-${schedule}`).digest("hex");
+  return `po-${hash.slice(0, IDEMPOTENCY_KEY_MAX - 3 - suffix.length)}${suffix}`;
 }
 
 /** Den første betalingsplan, der ikke er gennemført. */
@@ -127,7 +143,7 @@ export function pickMandate(
 
 export function decideCharge(
   order: PreorderOrder,
-  opts: { now?: Date; force?: boolean; attempt?: number; autoCapture?: boolean } = {},
+  opts: { now?: Date; force?: boolean; attempt?: number; autoCapture?: boolean; sendAmount?: boolean } = {},
 ): ChargeDecision {
   const now = opts.now ?? new Date();
 
@@ -158,12 +174,22 @@ export function decideCharge(
   if (amountMinor <= 0) {
     return { ok: false, reason: "NOTHING_OUTSTANDING", message: "Der er intet udestående at trække" };
   }
+  // Uden amount trækker Shopify hele planens restbeløb. Er ordrens udestående
+  // mindre (fx efter delvis refusion), kan vi ikke begrænse trækket — så stop.
+  if (!opts.sendAmount && amountMinor < toMinor(scheduleDue.amount)) {
+    return {
+      ok: false,
+      reason: "AMOUNT_MISMATCH",
+      message: `Udestående (${outstanding.amount}) er mindre end planens restbeløb (${scheduleDue.amount}). Uden Shopify Plus kan beløbet ikke angives.`,
+    };
+  }
 
   const { mandate, warnings } = pickMandate(order, schedule.dueAt);
   if (!mandate) {
     return { ok: false, reason: "NO_MANDATE", message: "Ordren har intet gemt betalingsmiddel, der kan trækkes på" };
   }
 
+  const expectedAmount = { amount: fromMinor(amountMinor), currencyCode: outstanding.currencyCode };
   return {
     ok: true,
     input: {
@@ -171,9 +197,10 @@ export function decideCharge(
       mandateId: mandate.id,
       paymentScheduleId: schedule.id,
       idempotencyKey: idempotencyKey(order.id, schedule.id, opts.attempt ?? 1),
-      amount: { amount: fromMinor(amountMinor), currencyCode: outstanding.currencyCode },
+      ...(opts.sendAmount ? { amount: expectedAmount } : {}),
       autoCapture: opts.autoCapture ?? true,
     },
+    expectedAmount,
     warnings,
   };
 }

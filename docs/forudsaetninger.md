@@ -550,7 +550,7 @@ med `npm run bevis -- traek --ordre 8234472341846 --foer-tid`.
    kun beløbet med `sendAmount` (`--med-beloeb`). Uden det nægter den at
    trække, hvis ordrens udestående er *mindre* end planens restbeløb (fx
    efter en delvis refusion), for så kan beløbet ikke begrænses
-   (`AMOUNT_MISMATCH`). **UKENDT**: om lalatoto.dk er på Plus.
+   (`AMOUNT_MISMATCH`). lalatoto.dk er på Grow, ikke Plus (afsnit 5).
 2. **Idempotensnøglen må højst være 32 tegn.** «Idempotency key should be
    less than or equal to 32 characters long.» Den gamle nøgle
    `preorder-8234472341846-90087293270-1` var 36. Den nye er
@@ -734,9 +734,11 @@ Mulige statusser fra `orderPaymentStatus` ([OrderPaymentStatusResult](https://sh
 
 1. ~~Får appen `read_payment_mandate` og `write_payment_mandate`?~~ Ja, for
    testappen (1.2, punkt 6). Produktionsappen skal søge selv.
-5. **Er lalatoto.dk på Shopify Plus?** Kun Plus må angive beløbet i
-   `orderCreateMandatePayment` (3.4). Uden Plus trækkes altid hele planens
-   restbeløb.
+5. ~~Er lalatoto.dk på Shopify Plus?~~ Nej, planen er **Grow** (oplyst af
+   Nicolaj 2026-10-14). Appen kan derfor ikke angive beløbet i
+   `orderCreateMandatePayment` (3.4) og trækker altid hele planens
+   restbeløb. Ordrer med delvis refusion afvises af `decideCharge`
+   (`AMOUNT_MISMATCH`) og skal trækkes manuelt fra admin (3.5).
 2. ~~Hvilken betalingsudbyder bruger lalatoto.dk?~~ Afklaret: kun Shopify
    Payments, som understøtter forudbestilling (afsnit 1.4).
 3. **Kan MobilePay bruges?** Ifølge dokumentationen sandsynligvis ikke.

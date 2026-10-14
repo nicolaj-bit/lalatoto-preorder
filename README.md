@@ -3,9 +3,18 @@
 Custom Shopify-app til forudbestilling med udskudt betaling (*deferred
 purchase options*). Bygget på Shopifys officielle Remix-skabelon.
 
-**Dette trin er kun et bevis.** Der er ingen brugerflade, ingen app blocks og
-intet design. Beviset viser, at vi kan sælge en vare med 0 kr. ved checkout
-og trække restbeløbet senere via API'et.
+Beviset (`scripts/bevis.ts`) viste, at vi kan sælge en vare med 0 kr. ved
+checkout og trække restbeløbet senere via API'et. Oven på det er der nu:
+
+- **Dashboard i Shopify admin:** opret og fjern forudbestillinger på
+  produkter, og vælg stil og tekster til produktsiden.
+- **Temablok på produktsiden:** viser forudbestillingen og lægger varen i
+  kurven med planen. Følger temaets stil eller dashboardets egne farver.
+- **Annullering i kundekontoen:** kunden kan selv annullere og får pengene
+  tilbage, hvis der er trukket noget.
+
+Det automatiske træk på forfaldsdatoen og besked ved forsinkelse er ikke
+bygget endnu.
 
 Læs først [`docs/forudsaetninger.md`](docs/forudsaetninger.md): krav, kilder,
 hvad Shopify opretter, og hvad der sker, når noget går galt.
@@ -21,7 +30,10 @@ hvad Shopify opretter, og hvad der sker, når noget går galt.
 | `scripts/bevis.ts` | Beviset, trin for trin mod udviklingsbutikken |
 | `tests/unit/` | Enhedstests — kører uden netværk |
 | `tests/integration/` | Integrationstest mod udviklingsbutikken |
+| `app/routes/app._index.tsx` | Dashboardet: forudbestillinger på produkter |
+| `app/routes/app.stil.tsx` | Dashboardet: stil og tekster på produktsiden |
 | `app/routes/api.preorder-cancel.tsx` | Endepunkt for kundens annullering, kaldt fra kundekontoen |
+| `extensions/preorder-knap/` | Temablokken «Forudbestilling» til produktsiden |
 | `extensions/preorder-annuller/` | Knappen «Annuller forudbestilling» i kundekontoen |
 | `app/routes/`, `prisma/` | Fra skabelonen: login, sessions og webhooks |
 
@@ -102,6 +114,31 @@ Appen er en custom app: ingen App Store, intet review.
 Senere på en rigtig butik: vælg *Custom distribution* for appen i Dev
 Dashboard og send installationslinket til butikken. Det er ikke en del af
 dette trin.
+
+---
+
+## Tag det i brug på en butik
+
+Appen skal køre på en offentlig adresse, før dashboardet og annulleringen
+virker. Derefter:
+
+1. **Adresse i udvidelsen:** sæt `APP_URL` i
+   `extensions/preorder-annuller/src/api.js` til appens adresse, og kør
+   `shopify app deploy`.
+2. **Partner Dashboard → appen → API-adgang**
+   (`partners.shopify.com/<organisation>/apps/<app>/api_access`):
+   - «Allow network access in checkout and account UI extensions», så
+     knappen i kundekontoen må kalde appen.
+   - «Protected customer data access», så kundekontoen fortæller appen,
+     hvilken kunde der er logget ind. Uden den afvises alle annulleringer.
+3. **Temaet:** *Webshop → Temaer → Tilpas → produktskabelonen →
+   Tilføj blok → Apps → Forudbestilling*. Læg blokken over
+   læg-i-kurv-knappen.
+4. **Kundekonti:** *Indstillinger → Kundekonti* skal stå til de nye
+   kundekonti. Knappen «Annuller forudbestilling» kommer automatisk på
+   ordrer, der kan annulleres.
+5. **Dashboardet:** åbn appen i admin, vælg et produkt og en dato.
+   Produktet kan derefter kun købes som forudbestilling.
 
 ---
 

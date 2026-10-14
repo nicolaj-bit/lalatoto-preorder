@@ -20,15 +20,20 @@ Admin API-version i hele projektet: **2026-04**.
 | Trin | Status |
 |---|---|
 | Krav undersøgt (afsnit 1) | ✅ Færdig |
-| App oprettet i Dev Dashboard | ⚠️ 2026-10-13 — i butikkens organisation ved en fejl; slettet og oprettes forfra under partnerorganisationen |
+| App oprettet i Dev Dashboard | ✅ 2026-10-13 i partnerorganisationen, custom distribution til felt-post (første forsøg lå ved en fejl i butikkens organisation, se 1.2) |
 | Udviklingsbutik | ✅ `felt-post.myshopify.com` |
-| `read_payment_mandate`/`write_payment_mandate` i partnerorganisationen | ❌ Afvist: «Indeholder ugyldige omfang» (se 1.2) |
+| `read_payment_mandate`/`write_payment_mandate` i partnerorganisationen | ✅ Først afvist med «Indeholder ugyldige omfang», siden godkendt og i appversion 3 (se 1.2) |
 | Godkendelse fra Shopify | ✅ 2026-10-14 for testappen — godkendt straks i Partner Dashboard (se 1.2, punkt 6). Produktionsappen skal søge selv |
 | Selling plan group + testprodukt oprettet på udviklingsbutik | ✅ 2026-10-13 på `felt-post` (se 3.1) |
 | Testordre lagt igennem | ✅ 2026-10-13, ordre #1001 — med Bogus Gateway, ikke Shopify Payments (se 3.2) |
 | Restbeløb trukket manuelt fra admin | ✅ 2026-10-13, ordre #1003 med Bogus Gateway (se 3.5) |
 | Restbeløb trukket via API | ✅ 2026-10-14, ordre #1001 med Bogus Gateway (se 3.4) |
 | De fire fejltilfælde afprøvet (afsnit 4) | ⏳ Ikke kørt endnu — kun dokumentationen er læst |
+| Annullering i kundekontoen (4.3) | 🔧 Bygget, ikke afprøvet i butikken — kræver offentlig adresse |
+| Dashboard: forudbestillinger og stil | 🔧 Bygget. Opret/fjern og gem stil er kørt mod felt-post via koden, ikke via admin |
+| Temablok på produktsiden | 🔧 Bygget og afprøvet i Chromium på en testside, ikke i et rigtigt tema |
+| Automatisk træk på forfaldsdatoen | ⏳ Ikke bygget — kræver offentlig adresse og et planlagt job |
+| Besked ved forsinkelse og samtykke over 30 dage (1.7) | ⏳ Ikke bygget — kræver valg af mailudbyder |
 
 Koden til beviset ligger klar i `scripts/bevis.ts`. Afsnit 3 og 4 udfyldes
 med Shopifys rå svar, når den har kørt. Indtil da står der, hvad Shopify

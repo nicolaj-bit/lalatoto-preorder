@@ -250,3 +250,74 @@ export const SELLING_PLAN_CATEGORIES = /* GraphQL */ `
     nodes(ids: $ids) { ... on SellingPlan { id category } }
   }
 `;
+
+/** read_products + read_purchase_options. Alle grupper; appen filtrerer sine egne fra. */
+export const PREORDER_GROUPS_QUERY = /* GraphQL */ `
+  query Forudbestillinger {
+    sellingPlanGroups(first: 50) {
+      nodes {
+        id
+        name
+        appId
+        merchantCode
+        products(first: 20) { nodes { id title handle requiresSellingPlan } }
+        sellingPlans(first: 5) {
+          nodes {
+            id
+            category
+            billingPolicy {
+              ... on SellingPlanFixedBillingPolicy {
+                checkoutCharge {
+                  type
+                  value { ... on SellingPlanCheckoutChargePercentageValue { percentage } }
+                }
+                remainingBalanceChargeExactTime
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+/** write_products. Tvinger forudbestillingsplanen og gemmer datoen til temablokken. */
+export const PREORDER_PRODUCT_UPDATE = /* GraphQL */ `
+  mutation ForudbestillingPaaProdukt($product: ProductUpdateInput!) {
+    productUpdate(product: $product) {
+      product { id requiresSellingPlan }
+      userErrors { field message }
+    }
+  }
+`;
+
+export const METAFIELDS_SET = /* GraphQL */ `
+  mutation GemMetafelter($metafields: [MetafieldsSetInput!]!) {
+    metafieldsSet(metafields: $metafields) {
+      metafields { id namespace key }
+      userErrors { field message code }
+    }
+  }
+`;
+
+export const METAFIELDS_DELETE = /* GraphQL */ `
+  mutation SletMetafelter($metafields: [MetafieldIdentifierInput!]!) {
+    metafieldsDelete(metafields: $metafields) {
+      deletedMetafields { key namespace ownerId }
+      userErrors { field message }
+    }
+  }
+`;
+
+export const SELLING_PLAN_GROUP_DELETE = /* GraphQL */ `
+  mutation SletForudbestillingsplan($id: ID!) {
+    sellingPlanGroupDelete(id: $id) { deletedSellingPlanGroupId userErrors { field message } }
+  }
+`;
+
+/** Butikkens id (til shop-metafelter) og den gemte stil. */
+export const SHOP_STYLE_QUERY = /* GraphQL */ `
+  query ButikStil {
+    shop { id metafield(namespace: "lalatoto_preorder", key: "style") { value } }
+  }
+`;

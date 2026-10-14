@@ -11,7 +11,13 @@
 // og det, der lander som forfaldsdato på ordren.
 
 import { assertPercent } from "./money";
-import { assertInFuture } from "./dates";
+import { assertInFuture, formatDanishDate } from "./dates";
+
+/**
+ * Sættes som appId på gruppen, så appen (og temablokken via
+ * selling_plan_group.app_id) kan kende sine egne planer fra andre apps'.
+ */
+export const PREORDER_APP_ID = "lalatoto-preorder";
 
 export type PreorderPlanOptions = {
   /** Hvornår restbeløbet forfalder, og varen tidligst sendes. */
@@ -35,15 +41,19 @@ export function buildPreorderSellingPlanGroupInput(opts: PreorderPlanOptions) {
   assertInFuture(opts.chargeAt, opts.now);
   const chargeAt = opts.chargeAt.toISOString();
 
+  // Kunden ser planens navn og option i kurv og checkout. Restbeløbet trækkes
+  // på en fast dato, så teksten siger datoen — ikke «ved afsendelse».
+  const dueText = formatDanishDate(opts.chargeAt);
   return {
     name: opts.groupName ?? "Forudbestilling",
     merchantCode: opts.merchantCode ?? "lalatoto-preorder",
+    appId: PREORDER_APP_ID,
     options: ["Forudbestilling"],
     sellingPlansToCreate: [
       {
-        name: opts.planName ?? "Forudbestil – betal ved afsendelse",
+        name: opts.planName ?? "Forudbestilling",
         category: "PRE_ORDER",
-        options: [`${depositPercent} % nu, resten ved afsendelse`],
+        options: [`${depositPercent} % nu, resten ${dueText}`],
         billingPolicy: {
           fixed: {
             checkoutCharge: {

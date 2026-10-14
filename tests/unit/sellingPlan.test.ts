@@ -22,6 +22,13 @@ describe("buildPreorderSellingPlanGroupInput", () => {
     expect(plan.inventoryPolicy).toEqual({ reserve: "ON_SALE" });
   });
 
+  it("siger forfaldsdatoen til kunden i stedet for «ved afsendelse»", () => {
+    const input = buildPreorderSellingPlanGroupInput({ chargeAt, now });
+    expect(input.sellingPlansToCreate[0].name).toBe("Forudbestilling");
+    expect(input.sellingPlansToCreate[0].options).toEqual(["0 % nu, resten 1. december 2026"]);
+    expect(input.appId).toBe("lalatoto-preorder");
+  });
+
   it("gruppens og planens options har samme antal værdier (Shopify kræver det)", () => {
     const input = buildPreorderSellingPlanGroupInput({ chargeAt, now });
     expect(input.sellingPlansToCreate[0].options).toHaveLength(input.options.length);

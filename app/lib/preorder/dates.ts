@@ -97,3 +97,8 @@ export function cardExpiresBefore(
   const firstInvalid = Date.UTC(expiryYear, expiryMonth, 1);
   return due >= firstInvalid;
 }
+
+/** "12. november 2026" — datoen, som kunden ser den, i butikkens tidszone. */
+export function formatDanishDate(when: Date, timeZone = SHOP_TIME_ZONE): string {
+  return new Intl.DateTimeFormat("da-DK", { timeZone, day: "numeric", month: "long", year: "numeric" }).format(when);
+}

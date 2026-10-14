@@ -12,6 +12,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate, unauthenticated } from "../shopify.server";
 import { evaluateCancel, performCancel, type Graphql } from "../lib/preorder/cancelService";
+import { graphqlFromAdmin } from "../lib/shopify/remixGraphql.server";
 
 /** `dest` i tokenet er butikkens domæne, nogle gange med https:// foran. */
 function shopFromDest(dest: string): string {
@@ -20,12 +21,7 @@ function shopFromDest(dest: string): string {
 
 async function adminGraphql(shop: string): Promise<Graphql> {
   const { admin } = await unauthenticated.admin(shop);
-  return async (query, variables) => {
-    const res = await admin.graphql(query, { variables });
-    const body = (await res.json()) as { data?: any; errors?: unknown };
-    if (body.errors) throw new Error(`GraphQL-fejl: ${JSON.stringify(body.errors)}`);
-    return body.data;
-  };
+  return graphqlFromAdmin(admin);
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {

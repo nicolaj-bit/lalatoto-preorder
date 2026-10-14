@@ -22,8 +22,9 @@ export default function App() {
     <AppProvider isEmbeddedApp apiKey={apiKey}>
       <NavMenu>
         <Link to="/app" rel="home">
-          Forside
+          Forudbestillinger
         </Link>
+        <Link to="/app/stil">Stil på produktsiden</Link>
       </NavMenu>
       <Outlet />
     </AppProvider>

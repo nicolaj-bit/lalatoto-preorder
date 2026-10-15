@@ -121,9 +121,11 @@ dette trin.
 
 ## Tag det i brug på en butik
 
-1. **Base44:** opret Base44-appen og funktionen `cancelPreorder`. Sæt
-   `BASE44_ORIGIN` og `BASE44_APP_ID` i
-   `extensions/preorder-annuller/src/api.js`.
+1. **Base44:** appen findes (lalatoto-dashboard,
+   `https://lala-order-flow.base44.app`), og `BASE44_ORIGIN` og
+   `BASE44_APP_ID` i `extensions/preorder-annuller/src/api.js` peger på den.
+   Ny Base44-app: funktionerne udsendes først, når de er gemt i Base44 —
+   indtil da svarer de 404 «not found or not deployed».
 2. `shopify app deploy` — sender udvidelserne og scopes til Shopify.
 3. **Partner Dashboard → appen → API-adgang**
    (`partners.shopify.com/<organisation>/apps/<app>/api_access`):

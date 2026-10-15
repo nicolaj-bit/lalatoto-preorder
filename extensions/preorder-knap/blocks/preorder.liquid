@@ -1,0 +1,116 @@
+{%- comment -%}
+  Forudbestilling på produktsiden (Lalatoto Forudbestilling).
+
+  Vises kun, når produktet har appens forudbestilling: produktmetafeltet
+  lalatoto_preorder.info (skrevet af blokken «Forudbestilling» på produktet i
+  admin) peger på en selling plan, som mindst én variant har. Stil og tekster
+  er blokkens egne indstillinger i temaredigeringen. «theme» arver temaets
+  skrift og farver; «custom» lægger egne farver ovenpå.
+{%- endcomment -%}
+{%- liquid
+  assign info = product.metafields.lalatoto_preorder.info.value
+  assign plan_id = info.sellingPlanId | split: '/' | last
+
+  assign mode = block.settings.mode | default: 'theme'
+  assign badge_text = block.settings.badge_text
+  assign info_text = block.settings.info_text | default: 'Du betaler {depositum} i dag. Resten trækkes {dato}, når varen sendes.'
+  assign button_text = block.settings.button_text
+  assign date_text = info.chargeDateText
+
+  assign current = product.selected_or_first_available_variant
+  assign current_allocation = nil
+  assign has_plan = false
+  for variant in product.variants
+    for allocation in variant.selling_plan_allocations
+      assign allocation_plan_id = allocation.selling_plan.id | append: ''
+      if allocation_plan_id == plan_id
+        assign has_plan = true
+        if variant.id == current.id
+          assign current_allocation = allocation
+        endif
+      endif
+    endfor
+  endfor
+-%}
+{%- if info != blank and has_plan -%}
+  {%- capture deposit_text -%}
+    {%- if current_allocation -%}{{ current_allocation.checkout_charge_amount | money }}{%- endif -%}
+  {%- endcapture -%}
+  {%- capture style_vars -%}
+    {%- if mode == 'custom' -%}
+      --lp-accent: {{ block.settings.accent }}; --lp-accent-text: {{ block.settings.accent_text }};
+      --lp-bg: {{ block.settings.background }}; --lp-text: {{ block.settings.text }};
+      --lp-radius: {{ block.settings.radius }}px;
+    {%- endif -%}
+  {%- endcapture -%}
+  <lalatoto-preorder
+    class="lalatoto-preorder lalatoto-preorder--{{ mode | escape }}"
+    style="{{ style_vars | strip_newlines }}"
+    data-info-template="{{ info_text | escape }}"
+    data-date-text="{{ date_text | escape }}"
+    {{ block.shopify_attributes }}
+  >
+    {%- if badge_text != blank -%}
+      <span class="lalatoto-preorder__badge">{{ badge_text | escape }}</span>
+    {%- endif -%}
+    <p class="lalatoto-preorder__text" data-preorder-text>
+      {{- info_text | escape | replace: '{dato}', date_text | replace: '{depositum}', deposit_text -}}
+    </p>
+    <script type="application/json" data-preorder-config>
+      {
+        "buttonText": {{ button_text | json }},
+        "variants": {
+          {%- assign first = true -%}
+          {%- for variant in product.variants -%}
+            {%- for allocation in variant.selling_plan_allocations -%}
+              {%- assign allocation_plan_id = allocation.selling_plan.id | append: '' -%}
+              {%- if allocation_plan_id == plan_id -%}
+                {%- unless first -%},{%- endunless -%}
+                {%- assign first = false -%}
+                "{{ variant.id }}": { "plan": {{ allocation.selling_plan.id | json }}, "deposit": {{ allocation.checkout_charge_amount | money | json }} }
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endfor -%}
+        }
+      }
+    </script>
+  </lalatoto-preorder>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:blocks.preorder.name",
+  "target": "section",
+  "enabled_on": { "templates": ["product"] },
+  "javascript": "preorder.js",
+  "stylesheet": "preorder.css",
+  "settings": [
+    { "type": "paragraph", "content": "t:blocks.preorder.info" },
+    {
+      "type": "select",
+      "id": "mode",
+      "label": "t:blocks.preorder.settings.mode.label",
+      "options": [
+        { "value": "theme", "label": "t:blocks.preorder.settings.mode.theme" },
+        { "value": "custom", "label": "t:blocks.preorder.settings.mode.custom" }
+      ],
+      "default": "theme"
+    },
+    { "type": "text", "id": "button_text", "label": "t:blocks.preorder.settings.button_text.label", "info": "t:blocks.preorder.settings.button_text.info", "default": "Forudbestil" },
+    { "type": "text", "id": "badge_text", "label": "t:blocks.preorder.settings.badge_text.label", "default": "Forudbestilling" },
+    {
+      "type": "textarea",
+      "id": "info_text",
+      "label": "t:blocks.preorder.settings.info_text.label",
+      "info": "t:blocks.preorder.settings.info_text.info",
+      "default": "Du betaler {depositum} i dag. Resten trækkes {dato}, når varen sendes."
+    },
+    { "type": "header", "content": "t:blocks.preorder.settings.custom_header" },
+    { "type": "color", "id": "accent", "label": "t:blocks.preorder.settings.accent", "default": "#1f1f1f" },
+    { "type": "color", "id": "accent_text", "label": "t:blocks.preorder.settings.accent_text", "default": "#ffffff" },
+    { "type": "color", "id": "background", "label": "t:blocks.preorder.settings.background", "default": "#f5f5f5" },
+    { "type": "color", "id": "text", "label": "t:blocks.preorder.settings.text", "default": "#1f1f1f" },
+    { "type": "range", "id": "radius", "label": "t:blocks.preorder.settings.radius", "min": 0, "max": 24, "step": 1, "unit": "px", "default": 8 }
+  ]
+}
+{% endschema %}

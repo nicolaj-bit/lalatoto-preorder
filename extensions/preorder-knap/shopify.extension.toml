@@ -1,0 +1,6 @@
+# Temablok til produktsiden: viser forudbestillingen og sætter planen på
+# læg-i-kurv-formularen. Stil og tekster er blokkens indstillinger i
+# temaredigeringen; datoen kommer fra produktets metafelt lalatoto_preorder.info,
+# som blokken «Forudbestilling» på produktet i admin skriver.
+name = "Forudbestilling på produktsiden"
+type = "theme"

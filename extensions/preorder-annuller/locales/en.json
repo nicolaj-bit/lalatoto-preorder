@@ -1,0 +1,18 @@
+{
+  "menu": {
+    "cancel": "Cancel pre-order"
+  },
+  "modal": {
+    "heading": "Cancel pre-order",
+    "body": "Do you want to cancel your pre-order? This can't be undone.",
+    "noCharge": "You haven't been charged yet, and you won't be charged later.",
+    "refund": "You'll get the full amount back on the card you paid with.",
+    "confirm": "Cancel pre-order",
+    "keep": "Keep pre-order",
+    "doneHeading": "Pre-order cancelled",
+    "done": "We've cancelled your pre-order. You'll get a confirmation by email.",
+    "doneRefund": "We've cancelled your pre-order and your refund is on its way to your card. You'll get a confirmation by email.",
+    "error": "Your pre-order couldn't be cancelled here. Please contact us and we'll help.",
+    "close": "Close"
+  }
+}

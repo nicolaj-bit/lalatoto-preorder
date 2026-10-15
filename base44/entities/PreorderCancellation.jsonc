@@ -1,0 +1,14 @@
+{
+  "name": "PreorderCancellation",
+  "type": "object",
+  "description": "En kundes forsøg på at annullere en forudbestilling i kundekontoen. Skrives kun af funktionen cancelPreorder.",
+  "properties": {
+    "order_id": { "type": "string", "description": "Shopify-ordrens gid" },
+    "ok": { "type": "boolean", "description": "Om ordren blev annulleret" },
+    "reason": { "type": "string", "description": "Hvorfor annulleringen blev afvist" },
+    "refunded": { "type": "boolean", "description": "Om pengene blev refunderet" },
+    "cancelled_at": { "type": "string", "format": "date-time" }
+  },
+  "required": ["order_id", "ok", "cancelled_at"],
+  "rls": { "create": { "user_condition": { "role": "admin" } }, "read": { "user_condition": { "role": "admin" } }, "update": { "user_condition": { "role": "admin" } }, "delete": { "user_condition": { "role": "admin" } } }
+}

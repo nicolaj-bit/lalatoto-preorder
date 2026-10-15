@@ -21,7 +21,8 @@
     "test:watch": "vitest --project enhed",
     "test:integration": "vitest run --project integration",
     "typecheck": "tsc --noEmit",
-    "bevis": "tsx scripts/bevis.ts"
+    "bevis": "tsx scripts/bevis.ts",
+    "base44:sync": "tsx scripts/base44-sync.ts"
   },
   "type": "module",
   "engines": {

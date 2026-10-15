@@ -3,6 +3,7 @@ import {
   assertInFuture,
   cardExpiresBefore,
   daysUntil,
+  formatDanishDate,
   isDue,
   localDateTimeToUtc,
 } from "../../app/lib/preorder/dates";
@@ -76,5 +77,13 @@ describe("cardExpiresBefore", () => {
   it("forfald efter udløbsmåneden er et problem", () => {
     expect(cardExpiresBefore(11, 2026, "2026-12-01T08:00:00Z")).toBe(true);
     expect(cardExpiresBefore(1, 2027, "2026-12-01T08:00:00Z")).toBe(false);
+  });
+});
+
+describe("formatDanishDate", () => {
+  it("skriver datoen i dansk tid, også når UTC er dagen før", () => {
+    expect(formatDanishDate(new Date("2026-11-12T08:00:00Z"))).toBe("12. november 2026");
+    // 23:30 UTC 30. november er 00:30 dansk tid 1. december.
+    expect(formatDanishDate(new Date("2026-11-30T23:30:00Z"))).toBe("1. december 2026");
   });
 });

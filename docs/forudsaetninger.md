@@ -20,15 +20,21 @@ Admin API-version i hele projektet: **2026-04**.
 | Trin | Status |
 |---|---|
 | Krav undersøgt (afsnit 1) | ✅ Færdig |
-| App oprettet i Dev Dashboard | ⚠️ 2026-10-13 — i butikkens organisation ved en fejl; slettet og oprettes forfra under partnerorganisationen |
+| App oprettet i Dev Dashboard | ✅ 2026-10-13 i partnerorganisationen, custom distribution til felt-post (første forsøg lå ved en fejl i butikkens organisation, se 1.2) |
 | Udviklingsbutik | ✅ `felt-post.myshopify.com` |
-| `read_payment_mandate`/`write_payment_mandate` i partnerorganisationen | ❌ Afvist: «Indeholder ugyldige omfang» (se 1.2) |
+| `read_payment_mandate`/`write_payment_mandate` i partnerorganisationen | ✅ Først afvist med «Indeholder ugyldige omfang», siden godkendt og i appversion 3 (se 1.2) |
 | Godkendelse fra Shopify | ✅ 2026-10-14 for testappen — godkendt straks i Partner Dashboard (se 1.2, punkt 6). Produktionsappen skal søge selv |
 | Selling plan group + testprodukt oprettet på udviklingsbutik | ✅ 2026-10-13 på `felt-post` (se 3.1) |
 | Testordre lagt igennem | ✅ 2026-10-13, ordre #1001 — med Bogus Gateway, ikke Shopify Payments (se 3.2) |
 | Restbeløb trukket manuelt fra admin | ✅ 2026-10-13, ordre #1003 med Bogus Gateway (se 3.5) |
 | Restbeløb trukket via API | ✅ 2026-10-14, ordre #1001 med Bogus Gateway (se 3.4) |
 | De fire fejltilfælde afprøvet (afsnit 4) | ⏳ Ikke kørt endnu — kun dokumentationen er læst |
+| Annullering i kundekontoen (4.3) | 🔧 Knappen er bygget; serverdelen skal bygges i Base44 |
+| Forudbestilling på produktet i admin | 🔧 Bygget som blok på produktsiden. Opret/fjern er kørt mod felt-post via koden, ikke i admin |
+| Dashboard med kunder (Base44) | ⏳ Ikke bygget |
+| Temablok på produktsiden | 🔧 Bygget, stil i temaredigeringen. JavaScript afprøvet i Chromium på en testside, ikke i et rigtigt tema |
+| Automatisk træk på forfaldsdatoen | ⏳ Ikke bygget — skal være en planlagt Base44-funktion |
+| Besked ved forsinkelse og samtykke over 30 dage (1.7) | ⏳ Ikke bygget — kræver valg af mailudbyder |
 
 Koden til beviset ligger klar i `scripts/bevis.ts`. Afsnit 3 og 4 udfyldes
 med Shopifys rå svar, når den har kørt. Indtil da står der, hvad Shopify
@@ -708,8 +714,41 @@ Mulige statusser fra `orderPaymentStatus` ([OrderPaymentStatusResult](https://sh
   forudbestillinger i de læste kilder.
 - **Det betyder i praksis:** Kundens annullering ender som et
   `orderCancel`-kald fra appen (samme som 4.4, med `reason: CUSTOMER`).
-- **UKENDT:** Om kunden selv kan annullere fra sin kundekonto i Shopify.
-- **Afprøves:** `npm run bevis -- annuller --ordre <id> --aarsag CUSTOMER`.
+- **Bygget (2026-10-14), ikke afprøvet i butikken endnu:** knappen
+  «Annuller forudbestilling» i ordrens handlingsmenu i kundekontoen
+  (`extensions/preorder-annuller`, valgt af Nicolaj frem for et link i
+  ordrebekræftelsen). Den kalder Base44-funktionen `cancelPreorder` (ikke
+  bygget endnu), som skal godkende kaldet med kundekontoens session token og
+  bruge tokenets `sub` som kunde-id. `app/lib/preorder/cancel.ts` tillader kun annullering, når:
+  - ordren tilhører kunden, der er logget ind,
+  - ordren har en betalingsaftale og en linje med en plan, Shopify svarer
+    `category: PRE_ORDER` for (ikke et abonnement),
+  - ordren ikke er annulleret,
+  - varen ikke er sendt (`SCHEDULED`, `UNFULFILLED` eller `ON_HOLD`).
+
+  Er der trukket penge, refunderes de til det oprindelige betalingsmiddel
+  (`refundMethod.originalPaymentMethodsRefund`). Lageret lægges tilbage, og
+  Shopify sender kunden en mail (`notifyCustomer: true`).
+- **Forudsætninger, før knappen virker:**
+  1. Base44-funktionen findes, og `BASE44_ORIGIN`/`BASE44_APP_ID` i
+     `extensions/preorder-annuller/src/api.js` peger på den. **UKENDT**: om
+     en Base44-funktion svarer på browserens forhåndsforespørgsel (CORS
+     `OPTIONS`) fra kundekontoen.
+  2. «Allow network access in checkout and account UI extensions» på
+     appens API-adgangsside i Partner Dashboard (godkendes straks ifølge
+     [Enable extension capabilities for customer accounts](https://shopify.dev/docs/apps/build/customer-accounts/capabilities), læst 2026-10-14).
+  3. Adgang til beskyttede kundedata. Ellers har tokenet ingen `sub`, og
+     appen afviser alle annulleringer (`NOT_OWNER`)
+     ([Session Token API](https://shopify.dev/docs/api/customer-account-ui-extensions/2026-07/target-apis/platform-apis/session-token-api), læst 2026-10-14).
+  4. Butikken bruger de nye kundekonti, ikke de klassiske.
+- **Kontrolleret mod felt-post** (kun læsning): forespørgslerne svarer, og
+  `decideCancel` siger ja til #1001 og #1003 (forudbestillinger) og nej til
+  #1002 (almindeligt køb).
+- **UKENDT:** Om `orderCancel` med refusion virker på en ordre, hvis
+  restbeløb er trukket via betalingsaftalen.
+- **Afprøves:** Log ind som kunden på felt-post, åbn en forudbestilling, og
+  tryk «Annuller forudbestilling». Uden kundekonto:
+  `npm run bevis -- annuller --ordre <id> --aarsag CUSTOMER`.
 
 ### 4.4 Vi annullerer ordren
 

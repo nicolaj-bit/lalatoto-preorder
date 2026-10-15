@@ -1,0 +1,45 @@
+/* «theme»: arver temaets skrift og farver; kun afstand og en tynd kant. */
+.lalatoto-preorder {
+  display: block;
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid currentColor;
+  border-color: color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: var(--lp-radius, 0.5rem);
+  font: inherit;
+  color: inherit;
+}
+.lalatoto-preorder[hidden] {
+  display: none;
+}
+.lalatoto-preorder__badge {
+  display: inline-block;
+  margin-bottom: 0.4rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid currentColor;
+  border-radius: var(--lp-radius, 0.25rem);
+  font-size: 0.85em;
+  letter-spacing: 0.02em;
+}
+.lalatoto-preorder__text {
+  margin: 0;
+}
+
+/* «custom»: dashboardets farver og runding. */
+.lalatoto-preorder--custom {
+  border: 0;
+  background: var(--lp-bg);
+  color: var(--lp-text);
+}
+.lalatoto-preorder--custom .lalatoto-preorder__badge {
+  border-color: var(--lp-accent);
+  background: var(--lp-accent);
+  color: var(--lp-accent-text);
+}
+
+/* «custom»: temaets læg-i-kurv-knap, når varianten forudbestilles. */
+.lalatoto-preorder-button {
+  background: var(--lp-accent) !important;
+  color: var(--lp-accent-text) !important;
+  border-radius: var(--lp-radius) !important;
+}

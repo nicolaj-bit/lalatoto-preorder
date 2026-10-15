@@ -1,0 +1,13 @@
+# Blokken «Forudbestilling» på produktsiden i Shopify admin. Slår
+# forudbestilling til og fra på produktet og sætter dato og depositum.
+# Kalder Admin API'et direkte (shopify.query), så der skal ingen server til.
+api_version = "2026-07"
+
+[[extensions]]
+name = "Forudbestilling"
+handle = "preorder-produkt"
+type = "ui_extension"
+
+[[extensions.targeting]]
+module = "./src/ProductBlock.jsx"
+target = "admin.product-details.block.render"

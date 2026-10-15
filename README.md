@@ -3,9 +3,22 @@
 Custom Shopify-app til forudbestilling med udskudt betaling (*deferred
 purchase options*). Bygget på Shopifys officielle Remix-skabelon.
 
-**Dette trin er kun et bevis.** Der er ingen brugerflade, ingen app blocks og
-intet design. Beviset viser, at vi kan sælge en vare med 0 kr. ved checkout
-og trække restbeløbet senere via API'et.
+Beviset (`scripts/bevis.ts`) viste, at vi kan sælge en vare med 0 kr. ved
+checkout og trække restbeløbet senere via API'et. Oven på det er der nu:
+
+- **Blok på produktet i Shopify admin:** slå forudbestilling til og fra med
+  dato og depositum.
+- **Temablok på produktsiden:** viser forudbestillingen og lægger varen i
+  kurven med planen. Stil og tekster sættes i temaredigeringen: følg temaet
+  eller egne farver.
+- **Annullering i kundekontoen:** kunden kan selv annullere og får pengene
+  tilbage, hvis der er trukket noget.
+
+Alt det ovenfor ligger hos Shopify. **Serveren er en Base44-app**
+(Lalatoto Forudbestilling, ikke Club No Sleep). Den skal stå for
+annulleringen, det automatiske træk på forfaldsdatoen og et dashboard med
+kunderne. Base44-delen er ikke bygget endnu, og det er besked ved
+forsinkelse heller ikke.
 
 Læs først [`docs/forudsaetninger.md`](docs/forudsaetninger.md): krav, kilder,
 hvad Shopify opretter, og hvad der sker, når noget går galt.
@@ -16,12 +29,15 @@ hvad Shopify opretter, og hvad der sker, når noget går galt.
 
 | Sti | Indhold |
 |---|---|
-| `app/lib/preorder/` | Logikken: beløb i øre, datoer i dansk tid, selling plan, beslutning om træk |
+| `app/lib/preorder/` | Logikken: beløb i øre, datoer i dansk tid, selling plan, beslutning om træk og annullering |
 | `app/lib/shopify/` | GraphQL-kald og en lille Admin API-klient til scripts |
 | `scripts/bevis.ts` | Beviset, trin for trin mod udviklingsbutikken |
 | `tests/unit/` | Enhedstests — kører uden netværk |
 | `tests/integration/` | Integrationstest mod udviklingsbutikken |
-| `app/routes/`, `prisma/` | Fra skabelonen: login, sessions og webhooks |
+| `extensions/preorder-produkt/` | Blokken «Forudbestilling» på produktet i admin |
+| `extensions/preorder-knap/` | Temablokken «Forudbestilling» til produktsiden |
+| `extensions/preorder-annuller/` | Knappen «Annuller forudbestilling» i kundekontoen |
+| `app/routes/`, `prisma/` | Fra Remix-skabelonen; bruges ikke, fordi serveren er Base44 |
 
 ---
 
@@ -100,6 +116,29 @@ Appen er en custom app: ingen App Store, intet review.
 Senere på en rigtig butik: vælg *Custom distribution* for appen i Dev
 Dashboard og send installationslinket til butikken. Det er ikke en del af
 dette trin.
+
+---
+
+## Tag det i brug på en butik
+
+1. **Base44:** opret Base44-appen og funktionen `cancelPreorder`. Sæt
+   `BASE44_ORIGIN` og `BASE44_APP_ID` i
+   `extensions/preorder-annuller/src/api.js`.
+2. `shopify app deploy` — sender udvidelserne og scopes til Shopify.
+3. **Partner Dashboard → appen → API-adgang**
+   (`partners.shopify.com/<organisation>/apps/<app>/api_access`):
+   - «Allow network access in checkout and account UI extensions», så
+     knappen i kundekontoen må kalde Base44.
+   - «Protected customer data access», så kundekontoen fortæller, hvilken
+     kunde der er logget ind. Uden den afvises alle annulleringer.
+4. **Produktet:** åbn produktet i admin. Blokken «Forudbestilling» ligger
+   nederst (ellers: *⋯ → Tilpas blokke*). Vælg dato og depositum, og tryk
+   «Slå forudbestilling til».
+5. **Temaet:** *Webshop → Temaer → Tilpas → produktskabelonen → Tilføj
+   blok → Apps → Forudbestilling*. Læg den over læg-i-kurv-knappen, og vælg
+   stil og tekster i blokkens indstillinger.
+6. **Kundekonti:** *Indstillinger → Kundekonti* skal stå til de nye
+   kundekonti.
 
 ---
 

@@ -1,0 +1,18 @@
+{
+  "menu": {
+    "cancel": "Annuller forudbestilling"
+  },
+  "modal": {
+    "heading": "Annuller forudbestilling",
+    "body": "Vil du annullere din forudbestilling? Det kan ikke fortrydes.",
+    "noCharge": "Der er ikke trukket penge endnu, så der trækkes heller ikke noget senere.",
+    "refund": "Du får hele beløbet tilbage på det kort, du betalte med.",
+    "confirm": "Annuller forudbestilling",
+    "keep": "Behold forudbestillingen",
+    "doneHeading": "Forudbestillingen er annulleret",
+    "done": "Vi har annulleret din forudbestilling. Du får en bekræftelse på mail.",
+    "doneRefund": "Vi har annulleret din forudbestilling, og pengene er på vej tilbage til dit kort. Du får en bekræftelse på mail.",
+    "error": "Forudbestillingen kunne ikke annulleres her. Kontakt os, så hjælper vi.",
+    "close": "Luk"
+  }
+}

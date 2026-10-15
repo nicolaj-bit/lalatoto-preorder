@@ -25,3 +25,7 @@ pnpm-lock.yaml
 
 # Id'er fra beviset (scripts/bevis.ts)
 /.bevis
+
+# Typer, som Shopify CLI genererer ved hvert build
+extensions/*/shopify.d.ts
+extensions/*/manifest.json

@@ -6,6 +6,7 @@ api_version = "2026-07"
 [[extensions]]
 name = "Forudbestilling"
 handle = "preorder-produkt"
+uid = "453695b3-6a97-d204-1d96-666fd01700667e1dae5d"
 type = "ui_extension"
 
 [[extensions.targeting]]

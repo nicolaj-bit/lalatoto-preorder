@@ -6,6 +6,7 @@ api_version = "2026-07"
 [[extensions]]
 name = "Annuller forudbestilling"
 handle = "preorder-annuller"
+uid = "a43d4e12-ade1-dd24-dd00-542a838621844cfb40ae"
 type = "ui_extension"
 
 # Knappen i ordrens handlingsmenu. Vises kun, når appen siger, at ordren kan annulleres.

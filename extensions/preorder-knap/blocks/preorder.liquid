@@ -53,8 +53,13 @@
     {%- if badge_text != blank -%}
       <span class="lalatoto-preorder__badge">{{ badge_text | escape }}</span>
     {%- endif -%}
+    {%- comment -%}
+      Udskiftningen ligger i en assign: et '}' inde i {{ }} afslutter
+      udtrykket for tidligt, og Shopify afviser så hele temaudvidelsen.
+    {%- endcomment -%}
+    {%- assign shown_text = info_text | escape | replace: '{dato}', date_text | replace: '{depositum}', deposit_text -%}
     <p class="lalatoto-preorder__text" data-preorder-text>
-      {{- info_text | escape | replace: '{dato}', date_text | replace: '{depositum}', deposit_text -}}
+      {{- shown_text -}}
     </p>
     <script type="application/json" data-preorder-config>
       {

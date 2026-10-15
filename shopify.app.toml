@@ -1,16 +1,23 @@
 # This file stores configurations for your Shopify app.
 
-client_id = ""
+client_id = "d14f571a9f38c0b0460c11db867a8f22"
+name = "Lalatoto Forudbestilling"
+# Appen har ingen egen Remix-server: serveren er Base44 (se README). Appens
+# forside i Shopify er Base44-dashboardet, og den åbner uden for admin.
+application_url = "https://lala-order-flow.base44.app"
+embedded = false
 
 [access_scopes]
 # Se docs/forudsaetninger.md for hvorfor hvert scope er her.
 # read_all_orders og *_payment_mandate kræver Shopifys godkendelse pr. app i
 # Partner Dashboard (afsnit 1.2). Testappen er godkendt; en ny app skal søge selv.
 scopes = "write_products,read_products,write_purchase_options,read_purchase_options,read_orders,write_orders,read_all_orders,read_customers,read_payment_terms,read_payment_mandate,write_payment_mandate,read_publications,write_publications"
+optional_scopes = [ ]
+use_legacy_install_flow = false
 
-# Appen har ingen egen Remix-server: serveren er Base44 (se README). Appens
-# forside i Shopify (application_url, embedded = false) sættes til
-# Base44-dashboardet, når det findes. Webhooks fra skabelonen pegede på
-# Remix-serveren og er taget ud.
+# Webhooks fra skabelonen pegede på Remix-serveren og er taget ud.
 [webhooks]
 api_version = "2026-04"
+
+[auth]
+redirect_urls = [ ]

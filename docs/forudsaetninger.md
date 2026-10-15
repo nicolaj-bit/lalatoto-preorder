@@ -731,9 +731,13 @@ Mulige statusser fra `orderPaymentStatus` ([OrderPaymentStatusResult](https://sh
   Shopify sender kunden en mail (`notifyCustomer: true`).
 - **Forudsætninger, før knappen virker:**
   1. Base44-funktionen findes, og `BASE44_ORIGIN`/`BASE44_APP_ID` i
-     `extensions/preorder-annuller/src/api.js` peger på den. **UKENDT**: om
-     en Base44-funktion svarer på browserens forhåndsforespørgsel (CORS
-     `OPTIONS`) fra kundekontoen.
+     `extensions/preorder-annuller/src/api.js` peger på den. **KONTROLLERET
+     2026-10-15** mod `lala-order-flow.base44.app`: `cancelPreorder` svarer
+     401 `UNAUTHORIZED` på et forkert token, og Base44 svarer selv på
+     forhåndsforespørgslen (CORS `OPTIONS`) med
+     `access-control-allow-origin: *` og de tre headere, knappen sender.
+     Funktionerne i en ny Base44-app svarede 404 «not found or not deployed»,
+     indtil filerne blev gemt igen i Base44.
   2. «Allow network access in checkout and account UI extensions» på
      appens API-adgangsside i Partner Dashboard (godkendes straks ifølge
      [Enable extension capabilities for customer accounts](https://shopify.dev/docs/apps/build/customer-accounts/capabilities), læst 2026-10-14).

@@ -1,14 +1,14 @@
 // Kald til appens server, som er en Base44-funktion (cancelPreorder).
 // Kundekontoens udvidelser kører i en sandkasse og kender ikke adressen, så
-// den står her. Sæt de to værdier, når Base44-appen er oprettet.
+// den står her. Base44-appen er lalatoto-dashboard (lala-order-flow).
 //
 //   POST {BASE44_ORIGIN}/api/apps/{BASE44_APP_ID}/functions/cancelPreorder
 //   { action: "check" | "cancel", orderId }
 //
 // Kunden genkendes på kundekontoens session token i Authorization-headeren.
 // Funktionen bruger tokenets kunde-id, aldrig et id fra forespørgslen.
-export const BASE44_ORIGIN = 'https://lalatoto-forudbestilling.base44.app';
-export const BASE44_APP_ID = 'SKAL-UDFYLDES';
+export const BASE44_ORIGIN = 'https://lala-order-flow.base44.app';
+export const BASE44_APP_ID = '6ad0540094b2b23633a4f532';
 
 const ENDPOINT = `${BASE44_ORIGIN}/api/apps/${BASE44_APP_ID}/functions/cancelPreorder`;
 

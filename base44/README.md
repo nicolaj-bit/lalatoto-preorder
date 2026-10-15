@@ -1,7 +1,12 @@
 # Base44-appen «Lalatoto Forudbestilling»
 
-Serveren for forudbestillingerne. Den flyttes over i Base44-appens eget
-GitHub-repo, når appen er koblet til GitHub. Indtil da ligger den her.
+Serveren for forudbestillingerne. **Kilden er her**, hvor koden er testet.
+Base44-appen ligger i repoet `nicolaj-bit/lalatoto-dashboard`; kopiér
+derover med:
+
+```shell
+npm run base44:sync -- --to ../lalatoto-dashboard
+```
 
 | Sti | Indhold |
 |---|---|
@@ -11,7 +16,7 @@ GitHub-repo, når appen er koblet til GitHub. Indtil da ligger den her.
 | `workflows/Daglig træk af restbeløb.jsonc` | Kalder `chargeDuePreorders` hver dag kl. 9.15 dansk tid |
 | `entities/PreorderCharge.jsonc` | Hvert forsøg på at trække restbeløbet |
 | `entities/PreorderCancellation.jsonc` | Hver kundeannullering |
-| `frontend/pages/Forudbestillinger.jsx` | Dashboardet. Flyttes til `src/pages/` i Base44-appen |
+| `frontend/pages/Forudbestillinger.jsx` | Dashboardet. Kopieres til `src/pages/` i Base44-appen |
 | `shared/preorder/` | **Kopi** af `app/lib` — ret aldrig her, kør `npm run base44:sync` |
 | `shared/server/` | Kode, kun funktionerne bruger: Shopify-adgang, session token, trækket, dashboardets data |
 

@@ -11,7 +11,9 @@ embedded = false
 # Se docs/forudsaetninger.md for hvorfor hvert scope er her.
 # read_all_orders og *_payment_mandate kræver Shopifys godkendelse pr. app i
 # Partner Dashboard (afsnit 1.2). Testappen er godkendt; en ny app skal søge selv.
-scopes = "write_products,read_products,write_purchase_options,read_purchase_options,read_orders,write_orders,read_all_orders,read_customers,read_payment_terms,read_payment_mandate,write_payment_mandate,read_publications,write_publications"
+# customer_read_* er kundekontoens egne adgange; Shopifys eksempel på en knap
+# i ordrens handlingsmenu har dem.
+scopes = "write_products,read_products,write_purchase_options,read_purchase_options,read_orders,write_orders,read_all_orders,read_customers,read_payment_terms,read_payment_mandate,write_payment_mandate,read_publications,write_publications,customer_read_orders,customer_read_customers"
 optional_scopes = [ ]
 use_legacy_install_flow = false
 

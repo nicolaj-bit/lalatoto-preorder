@@ -818,21 +818,39 @@ ikke flyttes: den er bundet til felt-post (tilpasset distribution, 1.2).
 workflow, der sender en mail sammen med ordrebekræftelsen. Indtil varen er
 leveret, må hun **ikke komme i andre workflows**.
 
-**Forslag til, hvordan det kan gøres:**
+**Lalatoto.dk bruger Shopify Email og Shopify Flow** (oplyst af Nicolaj
+2026-10-17). Plan:
 
-- Ordren og kunden mærkes, når en forudbestilling lægges. Det kan være med
-  et tag som `forudbestilling` (Shopify Flow ved «Ordre oprettet», hvis en
-  linje har en selling plan, eller appen selv via webhook).
-- Forudbestillings-workflowet starter på det tag og sender mailen med det
-  samme.
-- Alle andre workflows får betingelsen «kunden har ikke tagget
-  `forudbestilling`».
-- Tagget fjernes, når ordren er leveret (Flow ved «Ordre klargjort» eller
-  «Levering gennemført»), eller hvis forudbestillingen annulleres. Først
-  derefter kan kunden komme i andre workflows.
-- Har kunden flere forudbestillinger, må tagget først fjernes, når den
-  sidste er leveret eller annulleret.
+1. **Mailen ved bestilling ligger i ordrebekræftelsen**, ikke i et Flow.
+   *Indstillinger → Notifikationer → Ordrebekræftelse* får en blok, der kun
+   vises, når en linje har en forudbestillingsplan
+   (`line.selling_plan_allocation`), med datoen for restbeløb og afsendelse.
+   Grunden: mails fra Shopify Email i Flow er markedsføring og når kun kunder,
+   der har sagt ja til markedsføring (GDPR og markedsføringsloven).
+   Ordrebekræftelsen er en servicemail og når
+   alle — og den kommer præcis samtidig med ordren.
+2. **Flow «Forudbestilling lagt»:** udløser *Ordre oprettet*; betingelse:
+   mindst én linje har en selling plan med navnet «Forudbestilling»;
+   handling: *Tilføj kundetags* `forudbestilling` (og evt. samme tag på
+   ordren).
+3. **Alle andre automatiseringer** i Shopify Email/Flow (velkomst, forladt
+   kurv, efter køb, win-back osv.) får betingelsen «kundens tags indeholder
+   ikke `forudbestilling`» lige efter udløseren.
+4. **Flow «Forudbestilling leveret»:** udløser *Ordre klargjort* (eller
+   *Levering gennemført*) og *Ordre annulleret*; betingelse: ordren har en
+   linje med forudbestillingsplan; handling: *Fjern kundetags*
+   `forudbestilling`.
 
-**UKENDT:** hvilket system der kører de andre workflows på lalatoto.dk
-(Klaviyo, Shopify Email/Flow eller andet). Det afgør, hvor betingelsen
-skal sættes, og om tagget skal sendes videre.
+**Afprøves, før det sættes op:**
+
+- At Flow kan se en linjes selling plan i betingelsen
+  (`order.lineItems.sellingPlan.name`). Ellers bruges ordrens tag, sat af
+  appen.
+- **Flere forudbestillinger på samme kunde:** punkt 4 fjerner tagget ved den
+  første levering, selv om en anden forudbestilling stadig venter. Flow kan
+  ikke let tælle kundens andre åbne ordrer. Sker det i praksis, kan appen
+  (Base44) i stedet sætte og fjerne tagget ud fra alle kundens åbne
+  forudbestillinger.
+- At automatiseringer, der allerede er i gang for kunden, stopper, når
+  tagget sættes. En betingelse tjekkes kun der, hvor den står i flowet;
+  flows med ventetid skal have betingelsen lige før hver mail.

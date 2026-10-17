@@ -1,7 +1,7 @@
 import '@shopify/ui-extensions/preact';
 import {render} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
-import {createPreorder, productPreorder, removePreorder} from '../../../app/lib/preorder/catalog';
+import {changePreorderDate, createPreorder, productPreorder, removePreorder} from '../../../app/lib/preorder/catalog';
 import {formatDanishDate} from '../../../app/lib/preorder/dates';
 
 // Blokken «Forudbestilling» på produktsiden i admin. Bruger samme logik som
@@ -30,6 +30,8 @@ function ProductBlock() {
   const [busy, setBusy] = useState(false);
   const [chargeDate, setChargeDate] = useState('');
   const [deposit, setDeposit] = useState('0');
+  const [newDate, setNewDate] = useState('');
+  const [notice, setNotice] = useState('');
 
   async function load() {
     try {
@@ -58,6 +60,40 @@ function ProductBlock() {
       const result = await createPreorder(graphql, {productId, chargeDate, depositPercent});
       if (!result.ok) setMessage(result.message);
       else await load();
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function changeDate() {
+    setBusy(true);
+    setMessage('');
+    setNotice('');
+    try {
+      const result = await changePreorderDate(graphql, {
+        groupId: preorder.groupId,
+        sellingPlanId: preorder.sellingPlanId,
+        productIds: preorder.products.map((p) => p.id),
+        chargeDate: newDate,
+        depositPercent: preorder.depositPercent ?? 0,
+      });
+      if (!result.ok) {
+        setMessage(result.message);
+        return;
+      }
+      const moved = result.ordersMoved.length;
+      setNotice(
+        moved === 0
+          ? 'Datoen er ændret. Der er ingen lagte ordrer at flytte.'
+          : `Datoen er ændret, også på ${moved === 1 ? 'ordre' : `${moved} ordrer`} ${result.ordersMoved.join(', ')}.`,
+      );
+      if (result.orderErrors.length > 0) {
+        setMessage(`Disse ordrer har stadig den gamle dato: ${result.orderErrors.join(' · ')}`);
+      }
+      setNewDate('');
+      await load();
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -113,6 +149,16 @@ function ProductBlock() {
               Produktet kan stadig købes uden forudbestilling. Slå forudbestilling fra og til igen for at låse det.
             </s-banner>
           )}
+          <s-date-field
+            label="Ny dato for restbeløb og afsendelse"
+            details="Flytter også datoen på ordrer, der allerede er lagt."
+            value={newDate}
+            onChange={(event) => setNewDate(event.currentTarget.value)}
+          />
+          <s-button loading={busy} disabled={!newDate} onClick={changeDate}>
+            Gem ny dato
+          </s-button>
+          {notice && <s-banner tone="success">{notice}</s-banner>}
           {message && <s-banner tone="critical">{message}</s-banner>}
           <s-paragraph>
             Fjernes forudbestillingen, beholder allerede lagte ordrer deres betalingsaftale.

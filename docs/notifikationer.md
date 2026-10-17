@@ -56,7 +56,12 @@ Skabelonen deles derfor i to:
   betalingsknap.
 - **Alt andet** (ordrekladder, fakturaer): Shopifys egen faktura, uændret.
 
-**Sådan:** *Indstillinger → Notifikationer → Kundenotifikationer →
+**Hurtigst:** hele skabelonen ligger færdig i
+[`skabeloner/ordrefaktura.liquid`](skabeloner/ordrefaktura.liquid): blok A,
+Shopifys egen faktura oversat til dansk og blok B. Erstat alt i «Rediger
+kode» med den, og gem.
+
+**Eller selv:** *Indstillinger → Notifikationer → Kundenotifikationer →
 Ordrefaktura → Rediger kode*. Indsæt blok A **helt øverst** (før alt andet)
 og blok B **helt nederst** (efter alt andet). Gem, og tryk «Forhåndsvis».
 

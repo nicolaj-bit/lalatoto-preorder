@@ -788,3 +788,51 @@ Mulige statusser fra `orderPaymentStatus` ([OrderPaymentStatusResult](https://sh
 4. **Godkender checkout kortet ved 0 % betaling?** Afgør, hvornår et dårligt
    kort opdages. Med Bogus Gateway: nej, ingen transaktioner (3.2). Shopify
    Payments er ikke afprøvet.
+
+## 6. Ved flytning til lalatoto.dk
+
+Tjekliste over det, der skal gøres om på den rigtige butik. Testappen kan
+ikke flyttes: den er bundet til felt-post (tilpasset distribution, 1.2).
+
+### 6.1 Det, vi allerede ved
+
+1. **Ny app med eget Client ID** i Dev Dashboard, tilpasset distribution til
+   lalatoto.dk. Søg `read_all_orders`, abonnements-API'et og
+   betalingsaftale-API'et på `api_access`-siden (1.2), og slå netværksadgang
+   for kundekontoens udvidelser til.
+2. `shopify app deploy`, og **åbn appen fra *Apps* i admin** bagefter, så
+   butikken får appens scopes (README, «Tag det i brug» punkt 2).
+3. **Base44:** sæt `SHOPIFY_STORE_DOMAIN`, `SHOPIFY_CLIENT_ID` og
+   `SHOPIFY_CLIENT_SECRET` til lalatoto.dk og den nye app. Tjek, at begge
+   workflows («Daglig træk af restbeløb» og «Påmindelse før forfald») er
+   registreret og aktive (`base44/README.md`).
+4. **Kundekonti:** sæt «Annuller forudbestilling» ind under
+   *Ordrestatus → Sidehoved → Ordrehandlinger*, og lad Shopifys egen
+   selvbetjening ved annullering være slået fra (README, punkt 6 og 7).
+5. **Temaet:** blokken «Forudbestilling på produktsiden» over
+   læg-i-kurv-knappen (README, punkt 5).
+
+### 6.2 Kundens mails om forudbestillingen (krav fra Nicolaj 2026-10-17)
+
+**Kravet:** Når en kunde lægger en forudbestilling, skal hun ind i ét
+workflow, der sender en mail sammen med ordrebekræftelsen. Indtil varen er
+leveret, må hun **ikke komme i andre workflows**.
+
+**Forslag til, hvordan det kan gøres:**
+
+- Ordren og kunden mærkes, når en forudbestilling lægges. Det kan være med
+  et tag som `forudbestilling` (Shopify Flow ved «Ordre oprettet», hvis en
+  linje har en selling plan, eller appen selv via webhook).
+- Forudbestillings-workflowet starter på det tag og sender mailen med det
+  samme.
+- Alle andre workflows får betingelsen «kunden har ikke tagget
+  `forudbestilling`».
+- Tagget fjernes, når ordren er leveret (Flow ved «Ordre klargjort» eller
+  «Levering gennemført»), eller hvis forudbestillingen annulleres. Først
+  derefter kan kunden komme i andre workflows.
+- Har kunden flere forudbestillinger, må tagget først fjernes, når den
+  sidste er leveret eller annulleret.
+
+**UKENDT:** hvilket system der kører de andre workflows på lalatoto.dk
+(Klaviyo, Shopify Email/Flow eller andet). Det afgør, hvor betingelsen
+skal sættes, og om tagget skal sendes videre.

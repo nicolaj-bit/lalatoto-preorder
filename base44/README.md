@@ -22,6 +22,11 @@ npm run base44:sync -- --to ../lalatoto-dashboard
 | `shared/preorder/` | **Kopi** af `app/lib` — ret aldrig her, kør `npm run base44:sync` |
 | `shared/server/` | Kode, kun funktionerne bruger: Shopify-adgang, session token, trækket, dashboardets data |
 
+**Nye workflows skal registreres i Base44.** Base44 henter workflow-filen
+med GitHub-synkroniseringen, men opretter ikke workflowet ud fra den. Bed
+Base44's assistent om at gemme filen uændret, så workflowet bliver oprettet
+og aktivt. Nye funktioner kommer med synkroniseringen af sig selv.
+
 ## Hemmeligheder i Base44
 
 | Navn | Værdi |

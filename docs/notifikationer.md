@@ -46,35 +46,94 @@ Datoen kommer fra produktets metafelt `lalatoto_preorder.info`, som blokken
 
 Appen sender denne mail (`orderInvoiceSend`) til hver kunde, hvis ordre
 flyttes til en ny dato, med emnet «Ny dato for din forudbestilling #1005» og
-den nye dato i beskeden. Skabelonen viser beskeden selv
-(`{% if custom_message %}`), men den har også en knap til at betale. Den skal
-skjules, så kunden ikke betaler restbeløbet før tid.
+den nye dato i beskeden (`custom_message`). Uden ændringer viser Shopify en
+almindelig faktura med «Betal nu» på butikkens sprog (engelsk på felt-post,
+se billedet 2026-10-17).
 
-Øverst i skabelonen:
+Skabelonen deles derfor i to:
+
+- **Forudbestilling:** en dansk mail om den nye dato, med varerne, uden
+  betalingsknap.
+- **Alt andet** (ordrekladder, fakturaer): Shopifys egen faktura, uændret.
+
+**Sådan:** *Indstillinger → Notifikationer → Kundenotifikationer →
+Ordrefaktura → Rediger kode*. Indsæt blok A **helt øverst** (før alt andet)
+og blok B **helt nederst** (efter alt andet). Gem, og tryk «Forhåndsvis».
+
+**Blok A — helt øverst:**
 
 ```liquid
-{% assign er_forudbestilling = false %}
-{% for line in line_items %}
-  {% if line.selling_plan_allocation %}{% assign er_forudbestilling = true %}{% endif %}
-{% endfor %}
+{%- assign er_forudbestilling = false -%}
+{%- for line in line_items -%}
+  {%- if line.selling_plan_allocation -%}
+    {%- assign er_forudbestilling = true -%}
+    {%- assign forudbestilling_dato = line.product.metafields.lalatoto_preorder.info.value.chargeDateText -%}
+  {%- endif -%}
+{%- endfor -%}
+{%- if er_forudbestilling -%}
+<!DOCTYPE html>
+<html lang="da">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;padding:0;background:#ffffff;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#333333;">
+  <tr><td align="center" style="padding:32px 16px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+      <tr><td style="padding-bottom:24px;">
+        {%- if shop.email_logo_url -%}
+          <img src="{{ shop.email_logo_url }}" alt="{{ shop.name }}" style="max-width:180px;">
+        {%- else -%}
+          <span style="font-size:22px;">{{ shop.name }}</span>
+        {%- endif -%}
+        <span style="float:right;color:#999999;font-size:14px;">Ordre {{ name }}</span>
+      </td></tr>
+      <tr><td>
+        <h1 style="font-size:22px;font-weight:normal;margin:0 0 16px;">Ny dato for din forudbestilling</h1>
+        {%- if custom_message != blank -%}
+          <p style="font-size:16px;line-height:1.6;margin:0 0 16px;">{{ custom_message }}</p>
+        {%- elsif forudbestilling_dato != blank -%}
+          <p style="font-size:16px;line-height:1.6;margin:0 0 16px;">Restbeløbet trækkes {{ forudbestilling_dato }} kl. 9, og varen sendes tidligst samme dag.</p>
+        {%- endif -%}
+        <p style="font-size:16px;line-height:1.6;margin:0 0 24px;">Beløbet trækkes automatisk på det kort, du betalte med. Du skal ikke betale noget nu.</p>
+      </td></tr>
+      <tr><td style="border-top:1px solid #e5e5e5;padding-top:16px;">
+        <h2 style="font-size:18px;font-weight:normal;margin:0 0 12px;">Din ordre</h2>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:15px;">
+          {%- for line in line_items -%}
+          <tr>
+            <td style="padding:6px 0;">{{ line.title }} × {{ line.quantity }}</td>
+            <td align="right" style="padding:6px 0;">{{ line.final_line_price | money }}</td>
+          </tr>
+          {%- endfor -%}
+          <tr><td style="padding:6px 0;color:#777777;">Fragt</td><td align="right" style="padding:6px 0;color:#777777;">{{ shipping_price | money }}</td></tr>
+          <tr><td style="padding:12px 0;border-top:1px solid #e5e5e5;font-weight:bold;">I alt</td><td align="right" style="padding:12px 0;border-top:1px solid #e5e5e5;font-weight:bold;">{{ total_price | money_with_currency }}</td></tr>
+        </table>
+      </td></tr>
+      <tr><td style="padding-top:24px;font-size:14px;line-height:1.6;color:#777777;">
+        Du kan annullere forudbestillingen i din kundekonto, indtil varen er sendt.
+        Har du spørgsmål, så svar på denne mail eller skriv til {{ shop.email }}.
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>
+{%- else -%}
 ```
 
-Find derefter blokken med betalingsknappen (den med «Betal nu» /
-«Complete your purchase» og linket til betalingen), og sæt den ind i:
+**Blok B — helt nederst:**
 
 ```liquid
-{% unless er_forudbestilling %}
-  … betalingsknappen, uændret …
-{% endunless %}
+{%- endif -%}
 ```
 
-Fakturaer på almindelige ordrer og kladdeordrer er uændrede.
+Alt, hvad Shopify havde i skabelonen, ligger nu mellem blok A og blok B og
+bruges kun, når ordren ikke er en forudbestilling.
 
 ## Afprøvet
 
 - 2026-10-17, felt-post: `orderInvoiceSend` med eget emne og besked på
-  ordre #1005 blev taget imod uden fejl. Indholdet af mailen er ikke set
-  endnu.
+  ordre #1005 kom frem. Uden ændret skabelon viste den Shopifys engelske
+  faktura med beskeden og en «Pay now»-knap — derfor afsnit 2.
 
 ## Ikke afprøvet endnu
 

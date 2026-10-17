@@ -7,7 +7,8 @@ Beviset (`scripts/bevis.ts`) viste, at vi kan sælge en vare med 0 kr. ved
 checkout og trække restbeløbet senere via API'et. Oven på det er der nu:
 
 - **Blok på produktet i Shopify admin:** slå forudbestilling til og fra med
-  dato og depositum.
+  dato og depositum, og flyt datoen, hvis leveringen bliver flyttet. Den nye
+  dato gælder også ordrer, der allerede er lagt.
 - **Temablok på produktsiden:** viser forudbestillingen og lægger varen i
   kurven med planen. Stil og tekster sættes i temaredigeringen: følg temaet
   eller egne farver.
@@ -127,6 +128,8 @@ dette trin.
    Ny Base44-app: funktionerne udsendes først, når de er gemt i Base44 —
    indtil da svarer de 404 «not found or not deployed».
 2. `shopify app deploy` — sender udvidelserne og scopes til Shopify.
+   **Åbn derefter appen fra *Apps* i butikkens admin.** Først da får appen
+   nye scopes på butikken; der vises ingen side, man skal godkende.
 3. **Partner Dashboard → appen → API-adgang**
    (`partners.shopify.com/<organisation>/apps/<app>/api_access`):
    - «Allow network access in checkout and account UI extensions», så
@@ -147,6 +150,11 @@ dette trin.
    forudbestilling» ind under *Sidehoved → Ordrehandlinger*. Gem. Uden det
    trin bliver knappen aldrig kørt i kundekontoen. Der kommer ingen fejl, og
    der sendes intet kald til Base44.
+8. **Påmindelse før forfald:** kopiér Base44-delen over med
+   `npm run base44:sync -- --to ../lalatoto-dashboard` (se `base44/README.md`).
+   Workflowet «Påmindelse før forfald» sender hver morgen kl. 8 én mail til
+   Base44-appens admin-brugere om de forudbestillinger, der forfalder om 7
+   dage.
 
 ---
 

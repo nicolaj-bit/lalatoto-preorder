@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Forudbestillinger</title>
+    <!-- Appens Client ID. Ikke en hemmelighed: den står også i shopify.app.toml. -->
+    <meta name="shopify-api-key" content="d14f571a9f38c0b0460c11db867a8f22" />
+    <!-- App Bridge skal være det første script. Polaris giver Shopifys eget design. -->
+    <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+    <script src="https://cdn.shopify.com/shopifycloud/polaris-1.js"></script>
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <s-page heading="Forudbestillinger" inlineSize="large">
+      <s-button slot="primary-action" variant="primary" id="refresh">Opdatér</s-button>
+      <s-button slot="secondary-actions" id="preview">Hvad trækkes i dag?</s-button>
+
+      <!-- Polaris' komponenter ser bort fra hidden, så de skjules med en div udenom. -->
+      <div id="error" hidden>
+        <s-banner tone="critical" heading="Kunne ikke hente forudbestillinger">
+          <s-paragraph id="error-text"></s-paragraph>
+        </s-banner>
+      </div>
+
+      <s-section>
+        <s-grid gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))" gap="base" id="stats"></s-grid>
+      </s-section>
+
+      <div id="preview-section" hidden>
+        <s-section heading="Prøvekørsel af dagens træk — der trækkes intet">
+          <s-stack gap="small-200" id="preview-list"></s-stack>
+        </s-section>
+      </div>
+
+      <s-section padding="none">
+        <s-table id="table" loading>
+          <s-grid slot="filters" gridTemplateColumns="1fr auto" gap="small-200">
+            <s-search-field label="Søg" labelAccessibilityVisibility="exclusive" placeholder="Søg på kunde, e-mail, ordre eller vare" id="search"></s-search-field>
+            <s-select label="Status" labelAccessibilityVisibility="exclusive" id="status">
+              <s-option value="alle">Alle</s-option>
+              <s-option value="afventer betaling">Afventer betaling</s-option>
+              <s-option value="forfalden">Forfalden</s-option>
+              <s-option value="betalt">Betalt</s-option>
+              <s-option value="annulleret">Annulleret</s-option>
+            </s-select>
+          </s-grid>
+          <s-table-header-row>
+            <s-table-header listSlot="primary">Ordre</s-table-header>
+            <s-table-header listSlot="secondary">Kunde</s-table-header>
+            <s-table-header>Varer</s-table-header>
+            <s-table-header format="numeric">Restbeløb</s-table-header>
+            <s-table-header>Forfalder</s-table-header>
+            <s-table-header listSlot="inline">Status</s-table-header>
+            <s-table-header>Seneste træk</s-table-header>
+          </s-table-header-row>
+          <s-table-body id="rows"></s-table-body>
+        </s-table>
+      </s-section>
+    </s-page>
+  </body>
+</html>

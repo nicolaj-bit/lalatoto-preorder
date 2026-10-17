@@ -38,6 +38,7 @@ hvad Shopify opretter, og hvad der sker, når noget går galt.
 | `extensions/preorder-produkt/` | Blokken «Forudbestilling» på produktet i admin |
 | `extensions/preorder-knap/` | Temablokken «Forudbestilling» til produktsiden |
 | `extensions/preorder-annuller/` | Knappen «Annuller forudbestilling» i kundekontoen |
+| `admin-app/` | Dashboardet, der vises inde i Shopify admin, når appen åbnes. Ligger på Vercel |
 | `app/routes/`, `prisma/` | Fra Remix-skabelonen; bruges ikke, fordi serveren er Base44 |
 
 ---
@@ -150,11 +151,42 @@ dette trin.
    forudbestilling» ind under *Sidehoved → Ordrehandlinger*. Gem. Uden det
    trin bliver knappen aldrig kørt i kundekontoen. Der kommer ingen fejl, og
    der sendes intet kald til Base44.
-8. **Påmindelse før forfald:** kopiér Base44-delen over med
+8. **Dashboardet i Shopify admin:** se «Dashboardet i admin» nedenfor.
+9. **Påmindelse før forfald:** kopiér Base44-delen over med
    `npm run base44:sync -- --to ../lalatoto-dashboard` (se `base44/README.md`).
    Workflowet «Påmindelse før forfald» sender hver morgen kl. 8 én mail til
    Base44-appens admin-brugere om de forudbestillinger, der forfalder om 7
    dage.
+
+---
+
+## Dashboardet i admin
+
+Når appen åbnes fra *Apps* i admin, vises dashboardet inde i Shopify i
+Shopifys eget design. Siden ligger i `admin-app/` og er almindelig HTML og
+JavaScript uden byggetrin.
+
+**Hvorfor ikke Base44-siden?** Base44 sender `X-Frame-Options: DENY`, så
+dens sider må ikke vises inde i en anden side — og det er sådan Shopify viser
+en app. Derfor ligger dashboardet på Vercel og henter sine data fra
+Base44-funktionen `adminPreorders`.
+
+**Login:** Ingen. App Bridge (Shopifys script på siden) giver et ID token for
+den, der er logget ind i butikkens admin, og `adminPreorders` tjekker det.
+Kundekontoens token afvises, selv om det er signeret med samme nøgle: det har
+ikke `iss` fra admin.
+
+**Opsætning på Vercel, én gang:**
+
+1. *Add New → Project* → vælg `lalatoto-preorder`.
+2. *Root Directory*: `admin-app`. *Framework Preset*: *Other*. Ingen
+   build-kommando.
+3. *Deploy*. Adressen (fx `https://lalatoto-preorder.vercel.app`) sættes som
+   `application_url` i `shopify.app.toml` med `embedded = true`, og så køres
+   `shopify app deploy`.
+
+`admin-app/vercel.json` tillader kun, at siden vises inde i
+`admin.shopify.com` og `*.myshopify.com`.
 
 ---
 

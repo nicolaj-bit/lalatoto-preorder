@@ -13,7 +13,8 @@ npm run base44:sync -- --to ../lalatoto-dashboard
 | `functions/cancelPreorder/` | Kaldes af knappen «Annuller forudbestilling» i kundekontoen. Uden Base44-login; kunden godkendes med kundekontoens session token |
 | `functions/chargeDuePreorders/` | Trækker restbeløbet på forfaldne forudbestillinger. `{ dryRun: true }` viser kun, hvad der ville blive trukket |
 | `functions/remindUpcomingPreorders/` | Sender én mail til appens admin-brugere om de forudbestillinger, der forfalder om 7 dage. `{ dryRun: true }` viser mailen uden at sende |
-| `functions/listPreorders/` | Dashboardets liste over forudbestillinger og kunder. Kun for admin |
+| `functions/listPreorders/` | Base44-dashboardets liste over forudbestillinger og kunder. Kun for admin |
+| `functions/adminPreorders/` | Samme liste og prøvekørslen af trækket til dashboardet inde i Shopify admin (`admin-app/`). Uden Base44-login; godkendes med App Bridges ID token |
 | `workflows/Daglig træk af restbeløb.jsonc` | Kalder `chargeDuePreorders` hver dag kl. 9.15 dansk tid |
 | `workflows/Påmindelse før forfald.jsonc` | Kalder `remindUpcomingPreorders` hver dag kl. 8 dansk tid |
 | `entities/PreorderCharge.jsonc` | Hvert forsøg på at trække restbeløbet |

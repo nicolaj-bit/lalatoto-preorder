@@ -836,21 +836,26 @@ leveret, må hun **ikke komme i andre workflows**.
 3. **Alle andre automatiseringer** i Shopify Email/Flow (velkomst, forladt
    kurv, efter køb, win-back osv.) får betingelsen «kundens tags indeholder
    ikke `forudbestilling`» lige efter udløseren.
-4. **Flow «Forudbestilling leveret»:** udløser *Ordre klargjort* (eller
-   *Levering gennemført*) og *Ordre annulleret*; betingelse: ordren har en
-   linje med forudbestillingsplan; handling: *Fjern kundetags*
-   `forudbestilling`.
+4. **Tagget fjernes af appen, ikke af Flow.** Har kunden flere
+   forudbestillinger, må tagget først fjernes, når den sidste er leveret
+   eller annulleret (Nicolaj 2026-10-17). Flow kan ikke let se kundens
+   andre ordrer, så en Base44-funktion gør det: når en ordre med
+   forudbestilling bliver klargjort eller annulleret (dagligt workflow
+   eller webhook), slår den kundens øvrige forudbestillinger op og fjerner
+   `forudbestilling` kun, hvis der ikke er flere åbne.
 
-**Afprøves, før det sættes op:**
+**Afprøves, før det sættes op** (kan gøres i Flow på felt-post):
 
-- At Flow kan se en linjes selling plan i betingelsen
-  (`order.lineItems.sellingPlan.name`). Ellers bruges ordrens tag, sat af
-  appen.
-- **Flere forudbestillinger på samme kunde:** punkt 4 fjerner tagget ved den
-  første levering, selv om en anden forudbestilling stadig venter. Flow kan
-  ikke let tælle kundens andre åbne ordrer. Sker det i praksis, kan appen
-  (Base44) i stedet sætte og fjerne tagget ud fra alle kundens åbne
-  forudbestillinger.
-- At automatiseringer, der allerede er i gang for kunden, stopper, når
-  tagget sættes. En betingelse tjekkes kun der, hvor den står i flowet;
-  flows med ventetid skal have betingelsen lige før hver mail.
+- **Kan Flow se, at en ordrelinje er en forudbestilling?** Ukendt. Prøv en
+  betingelse på `order.lineItems.sellingPlan.name` = «Forudbestilling». Kan
+  Flow ikke se det, sætter appen i stedet et tag på ordren, som Flow kan
+  starte på.
+- **Flows, der allerede er i gang.** Et flow, der venter, før det sender
+  (fx forladt kurv: vent 1 dag, send mail), tjekker kun betingelsen dér,
+  hvor den står. Startede kunden i det flow, før hun forudbestilte, sender
+  det stadig mailen, medmindre betingelsen «ikke tagget
+  `forudbestilling`» står lige før hver mail — ikke kun ved start.
+- **Samme øjeblik.** Flows, der starter på *Ordre oprettet*, kører samtidig
+  med det flow, der sætter tagget, og kan nå at se kunden uden tag. De
+  skal derfor også tjekke selve ordren (har den en forudbestilling) eller
+  vente et øjeblik, før de tjekker tagget.

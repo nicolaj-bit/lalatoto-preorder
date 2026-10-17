@@ -43,3 +43,8 @@
   color: var(--lp-accent-text) !important;
   border-radius: var(--lp-radius) !important;
 }
+
+/* «Køb nu»-knapperne skjules, mens varianten forudbestilles (se preorder.js). */
+.lalatoto-preorder-no-express {
+  display: none !important;
+}

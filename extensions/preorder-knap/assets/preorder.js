@@ -71,10 +71,25 @@
       return idInput ? this.config.variants[String(idInput.value)] : undefined;
     }
 
+    /**
+     * «Køb nu»-knapperne (Shop Pay, «Buy it now» osv.). Shopify lægger dem i
+     * .shopify-payment-button, i formularen eller lige ved siden af den.
+     */
+    paymentButtons(form) {
+      const inside = [...form.querySelectorAll('.shopify-payment-button')];
+      if (inside.length > 0 || !form.parentElement) return inside;
+      return [...form.parentElement.querySelectorAll('.shopify-payment-button')];
+    }
+
     applyButton(form) {
+      const entry = this.currentEntry(form);
+      // En forudbestilling skal gennem kurven, så kunden ser vilkårene og
+      // planen følger med. «Køb nu» skjules, kun mens varianten forudbestilles.
+      for (const el of this.paymentButtons(form)) {
+        el.classList.toggle('lalatoto-preorder-no-express', Boolean(entry));
+      }
       const button = this.submitButton(form);
       if (!button) return;
-      const entry = this.currentEntry(form);
       if (this.isCustom) {
         // Egen stil: knappen får dashboardets farver, men kun når varianten
         // forudbestilles. Variablerne kopieres fra blokken.

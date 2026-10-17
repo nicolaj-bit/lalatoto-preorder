@@ -56,7 +56,12 @@ Skabelonen deles derfor i to:
   betalingsknap.
 - **Alt andet** (ordrekladder, fakturaer): Shopifys egen faktura, uændret.
 
-**Sådan:** *Indstillinger → Notifikationer → Kundenotifikationer →
+**Hurtigst:** hele skabelonen ligger færdig i
+[`skabeloner/ordrefaktura.liquid`](skabeloner/ordrefaktura.liquid): blok A,
+Shopifys egen faktura oversat til dansk og blok B. Erstat alt i «Rediger
+kode» med den, og gem.
+
+**Eller selv:** *Indstillinger → Notifikationer → Kundenotifikationer →
 Ordrefaktura → Rediger kode*. Indsæt blok A **helt øverst** (før alt andet)
 og blok B **helt nederst** (efter alt andet). Gem, og tryk «Forhåndsvis».
 
@@ -79,12 +84,16 @@ og blok B **helt nederst** (efter alt andet). Gem, og tryk «Forhåndsvis».
   <tr><td align="center" style="padding:32px 16px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
       <tr><td style="padding-bottom:24px;">
-        {%- if shop.email_logo_url -%}
-          <img src="{{ shop.email_logo_url }}" alt="{{ shop.name }}" style="max-width:180px;">
-        {%- else -%}
-          <span style="font-size:22px;">{{ shop.name }}</span>
-        {%- endif -%}
-        <span style="float:right;color:#999999;font-size:14px;">Ordre {{ name }}</span>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+          <td>
+            {%- if shop.email_logo_url -%}
+              <img src="{{ shop.email_logo_url }}" alt="{{ shop.name }}" style="max-width:180px;">
+            {%- else -%}
+              <span style="font-size:22px;">{{ shop.name }}</span>
+            {%- endif -%}
+          </td>
+          <td align="right" style="color:#999999;font-size:14px;">Ordre {{ name }}</td>
+        </tr></table>
       </td></tr>
       <tr><td>
         <h1 style="font-size:22px;font-weight:normal;margin:0 0 16px;">Ny dato for din forudbestilling</h1>
@@ -109,7 +118,9 @@ og blok B **helt nederst** (efter alt andet). Gem, og tryk «Forhåndsvis».
         </table>
       </td></tr>
       <tr><td style="padding-top:24px;font-size:14px;line-height:1.6;color:#777777;">
-        Du kan annullere forudbestillingen i din kundekonto, indtil varen er sendt.
+        {%- unless custom_message contains 'annullere' -%}
+          Du kan annullere forudbestillingen i din kundekonto, indtil varen er sendt.
+        {%- endunless %}
         Har du spørgsmål, så svar på denne mail eller skriv til {{ shop.email }}.
       </td></tr>
     </table>
@@ -134,6 +145,9 @@ bruges kun, når ordren ikke er en forudbestilling.
 - 2026-10-17, felt-post: `orderInvoiceSend` med eget emne og besked på
   ordre #1005 kom frem. Uden ændret skabelon viste den Shopifys engelske
   faktura med beskeden og en «Pay now»-knap — derfor afsnit 2.
+
+- 2026-10-17, felt-post: Med skabelonen i `skabeloner/ordrefaktura.liquid`
+  kom mailen om ny dato på dansk, med datoen og uden «Betal nu».
 
 ## Ikke afprøvet endnu
 

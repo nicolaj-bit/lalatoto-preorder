@@ -140,7 +140,13 @@ dette trin.
    blok → Apps → Forudbestilling*. Læg den over læg-i-kurv-knappen, og vælg
    stil og tekster i blokkens indstillinger.
 6. **Kundekonti:** *Indstillinger → Kundekonti* skal stå til de nye
-   kundekonti.
+   kundekonti. Lad «Returneringer og annulleringer via selvbetjening» være
+   slået fra: Shopifys egen annullering kender ikke forudbestillingens regler.
+7. **Annulleringsknappen:** *Indstillinger → Kundekonti → Konfigurationer →
+   Tilpas → Rediger*, vælg siden *Ordrestatus*, og sæt «Annuller
+   forudbestilling» ind under *Sidehoved → Ordrehandlinger*. Gem. Uden det
+   trin bliver knappen aldrig kørt i kundekontoen. Der kommer ingen fejl, og
+   der sendes intet kald til Base44.
 
 ---
 

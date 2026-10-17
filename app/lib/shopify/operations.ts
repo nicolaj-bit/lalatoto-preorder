@@ -372,6 +372,7 @@ export const OPEN_PREORDER_ORDERS_QUERY = /* GraphQL */ `
       nodes {
         id
         name
+        email
         lineItems(first: 20) { nodes { sellingPlan { sellingPlanId } } }
         paymentTerms { id paymentSchedules(first: 5) { nodes { id dueAt completedAt } } }
         fulfillmentOrders(first: 10) { nodes { id status fulfillAt } }
@@ -404,5 +405,19 @@ export const FULFILLMENT_ORDER_RESCHEDULE = /* GraphQL */ `
 export const FIXED_PAYMENT_TERMS_TEMPLATE_QUERY = /* GraphQL */ `
   query FastDatoSkabelon {
     paymentTermsTemplates(paymentTermsType: FIXED) { id }
+  }
+`;
+
+/**
+ * write_orders. Sender Shopifys mail «Ordrefaktura» fra butikkens adresse
+ * med vores emne og besked. Bruges til at fortælle kunden om en ny dato;
+ * skabelonen skjuler «Betal nu» på forudbestillinger (docs/notifikationer.md).
+ */
+export const ORDER_INVOICE_SEND = /* GraphQL */ `
+  mutation SendNyDatoMail($id: ID!, $email: EmailInput) {
+    orderInvoiceSend(id: $id, email: $email) {
+      order { id }
+      userErrors { field message }
+    }
   }
 `;

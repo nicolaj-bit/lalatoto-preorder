@@ -139,6 +139,7 @@ describe("changePreorderDate", () => {
     return {
       id: `gid://shopify/Order/${id}`,
       name: `#${id}`,
+      email: "kunde@example.com",
       lineItems: { nodes: [{ sellingPlan: { sellingPlanId: PLAN } }] },
       paymentTerms: { id: `gid://shopify/PaymentTerms/${id}`, paymentSchedules: { nodes: [{ id: "s", dueAt: "2026-12-15T08:00:00Z", completedAt: null }] } },
       fulfillmentOrders: { nodes: [{ id: `gid://shopify/FulfillmentOrder/${id}`, status: "SCHEDULED", fulfillAt: "2026-12-15T08:00:00Z" }] },
@@ -164,6 +165,8 @@ describe("changePreorderDate", () => {
           const failing = opts.termsErrorFor && (variables as any)?.input.paymentTermsId.endsWith(`/${opts.termsErrorFor}`);
           return { paymentTermsUpdate: { paymentTerms: null, userErrors: failing ? [{ message: "Kan ikke ændres" }] : [] } } as any;
         }
+        case "SendNyDatoMail":
+          return { orderInvoiceSend: { order: { id: variables?.id }, userErrors: [] } } as any;
         case "NyKlargoeringsdato":
           return { fulfillmentOrderReschedule: { fulfillmentOrder: { id: variables?.id }, userErrors: [] } } as any;
         default:
@@ -178,7 +181,13 @@ describe("changePreorderDate", () => {
   it("flytter planen, produktets dato og lagte ordrer til kl. 9 dansk tid", async () => {
     const { graphql, calls } = fake({ orders: [order("1001")] });
     const result = await changePreorderDate(graphql, base);
-    expect(result).toEqual({ ok: true, chargeAt: "2027-01-20T08:00:00.000Z", ordersMoved: ["#1001"], orderErrors: [] });
+    expect(result).toEqual({
+      ok: true,
+      chargeAt: "2027-01-20T08:00:00.000Z",
+      ordersMoved: ["#1001"],
+      customersNotified: ["#1001"],
+      orderErrors: [],
+    });
 
     const plan = calls.find((c) => c.name === "NyDatoPaaForudbestilling")!.variables;
     expect(plan.id).toBe(GROUP);
@@ -198,6 +207,20 @@ describe("changePreorderDate", () => {
       id: "gid://shopify/FulfillmentOrder/1001",
       fulfillAt: "2027-01-20T08:00:00.000Z",
     });
+    const mail = calls.find((c) => c.name === "SendNyDatoMail")!.variables;
+    expect(mail.id).toBe("gid://shopify/Order/1001");
+    expect(mail.email.subject).toBe("Ny dato for din forudbestilling #1001");
+    expect(mail.email.customMessage).toContain("20. januar 2027 kl. 9");
+  });
+
+  it("sender ingen mail, når det er slået fra, eller ordren ingen mail har", async () => {
+    const { graphql, calls } = fake({ orders: [order("1001"), order("1006", { email: null })] });
+    const off = await changePreorderDate(graphql, { ...base, notifyCustomers: false });
+    expect(off).toMatchObject({ ok: true, ordersMoved: ["#1001", "#1006"], customersNotified: [] });
+    expect(calls.some((c) => c.name === "SendNyDatoMail")).toBe(false);
+
+    const on = await changePreorderDate(graphql, base);
+    expect(on).toMatchObject({ ok: true, customersNotified: ["#1001"] });
   });
 
   it("rører ikke ordrer på andre planer eller med betalt restbeløb", async () => {
@@ -212,7 +235,12 @@ describe("changePreorderDate", () => {
   it("fortsætter med de andre ordrer, når én ikke kan flyttes", async () => {
     const { graphql } = fake({ orders: [order("1001"), order("1004")], termsErrorFor: "1001" });
     const result = await changePreorderDate(graphql, base);
-    expect(result).toMatchObject({ ok: true, ordersMoved: ["#1004"], orderErrors: ["#1001: forfaldsdatoen: Kan ikke ændres"] });
+    expect(result).toMatchObject({
+      ok: true,
+      ordersMoved: ["#1004"],
+      customersNotified: ["#1004"],
+      orderErrors: ["#1001: forfaldsdatoen: Kan ikke ændres"],
+    });
   });
 
   it("afviser en dato i fortiden uden at kalde Shopify", async () => {

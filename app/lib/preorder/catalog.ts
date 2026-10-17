@@ -15,6 +15,7 @@ import {
   METAFIELDS_DELETE,
   METAFIELDS_SET,
   OPEN_PREORDER_ORDERS_QUERY,
+  ORDER_INVOICE_SEND,
   PAYMENT_TERMS_UPDATE,
   PREORDER_GROUPS_QUERY,
   PRODUCT_PREORDER_QUERY,
@@ -206,6 +207,7 @@ const MAX_ORDER_PAGES = 20;
 type OpenOrder = {
   id: string;
   name: string;
+  email: string | null;
   lineItems: { nodes: Array<{ sellingPlan: { sellingPlanId: string | null } | null }> };
   paymentTerms: { id: string; paymentSchedules: { nodes: Array<{ id: string; dueAt: string | null; completedAt: string | null }> } } | null;
   fulfillmentOrders: { nodes: Array<{ id: string; status: string; fulfillAt: string | null }> };
@@ -231,7 +233,7 @@ export async function openOrdersOnPlan(graphql: Graphql, sellingPlanId: string, 
 }
 
 export type ChangeDateResult =
-  | { ok: true; chargeAt: string; ordersMoved: string[]; orderErrors: string[] }
+  | { ok: true; chargeAt: string; ordersMoved: string[]; customersNotified: string[]; orderErrors: string[] }
   | { ok: false; message: string };
 
 /**
@@ -249,6 +251,8 @@ export async function changePreorderDate(
     productIds: string[];
     chargeDate: string;
     depositPercent: number;
+    /** Send kunden Shopifys mail om den nye dato. Standard: ja. */
+    notifyCustomers?: boolean;
     now?: Date;
   },
 ): Promise<ChangeDateResult> {
@@ -286,7 +290,9 @@ export async function changePreorderDate(
 
   const at = chargeAt.toISOString();
   const ordersMoved: string[] = [];
+  const customersNotified: string[] = [];
   const orderErrors: string[] = [];
+  const notify = opts.notifyCustomers ?? true;
   const orders = await openOrdersOnPlan(graphql, opts.sellingPlanId, opts.now);
   let templateId: string | undefined;
   if (orders.length > 0) {
@@ -312,9 +318,27 @@ export async function changePreorderDate(
         if (e) orderErrors.push(e);
       }
       ordersMoved.push(order.name);
+      if (notify && order.email) {
+        const sent = await graphql<any>(ORDER_INVOICE_SEND, { id: order.id, email: newDateEmail(order.name, chargeAt) });
+        const e = userErrorsMessage(`${order.name}: mailen til kunden`, sent.orderInvoiceSend.userErrors);
+        if (e) orderErrors.push(e);
+        else customersNotified.push(order.name);
+      }
     } catch (err) {
       orderErrors.push(`${order.name}: ${(err as Error).message}`);
     }
   }
-  return { ok: true, chargeAt: at, ordersMoved, orderErrors };
+  return { ok: true, chargeAt: at, ordersMoved, customersNotified, orderErrors };
+}
+
+/** Emne og besked i mailen om en ny dato. Sendes med Shopifys «Ordrefaktura». */
+export function newDateEmail(orderName: string, chargeAt: Date) {
+  const dateText = formatDanishDate(chargeAt);
+  return {
+    subject: `Ny dato for din forudbestilling ${orderName}`,
+    customMessage:
+      `Leveringen af din forudbestilling er flyttet. Restbeløbet trækkes nu ${dateText} kl. 9, ` +
+      `og varen sendes tidligst samme dag. Du skal ikke gøre noget. ` +
+      `Du kan stadig annullere forudbestillingen i din kundekonto.`,
+  };
 }

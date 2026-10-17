@@ -32,6 +32,7 @@ function ProductBlock() {
   const [deposit, setDeposit] = useState('0');
   const [newDate, setNewDate] = useState('');
   const [notice, setNotice] = useState('');
+  const [notifyCustomers, setNotifyCustomers] = useState(true);
 
   async function load() {
     try {
@@ -78,16 +79,19 @@ function ProductBlock() {
         productIds: preorder.products.map((p) => p.id),
         chargeDate: newDate,
         depositPercent: preorder.depositPercent ?? 0,
+        notifyCustomers,
       });
       if (!result.ok) {
         setMessage(result.message);
         return;
       }
       const moved = result.ordersMoved.length;
+      const mailed = result.customersNotified.length;
       setNotice(
         moved === 0
           ? 'Datoen er ændret. Der er ingen lagte ordrer at flytte.'
-          : `Datoen er ændret, også på ${moved === 1 ? 'ordre' : `${moved} ordrer`} ${result.ordersMoved.join(', ')}.`,
+          : `Datoen er ændret, også på ${moved === 1 ? 'ordre' : `${moved} ordrer`} ${result.ordersMoved.join(', ')}.` +
+              (mailed > 0 ? ` ${mailed === 1 ? 'Kunden har' : `${mailed} kunder har`} fået en mail om den nye dato.` : ''),
       );
       if (result.orderErrors.length > 0) {
         setMessage(`Disse ordrer har stadig den gamle dato: ${result.orderErrors.join(' · ')}`);
@@ -154,6 +158,11 @@ function ProductBlock() {
             details="Flytter også datoen på ordrer, der allerede er lagt."
             value={newDate}
             onChange={(event) => setNewDate(event.currentTarget.value)}
+          />
+          <s-checkbox
+            label="Send kunderne en mail om den nye dato"
+            checked={notifyCustomers}
+            onChange={(event) => setNotifyCustomers(event.currentTarget.checked)}
           />
           <s-button loading={busy} disabled={!newDate} onClick={changeDate}>
             Gem ny dato

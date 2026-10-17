@@ -3,9 +3,10 @@
 client_id = "d14f571a9f38c0b0460c11db867a8f22"
 name = "Lalatoto Forudbestilling"
 # Appen har ingen egen Remix-server: serveren er Base44 (se README). Appens
-# forside i Shopify er Base44-dashboardet, og den åbner uden for admin.
-application_url = "https://lala-order-flow.base44.app"
-embedded = false
+# forside er dashboardet i admin-app/ på Vercel, og den åbner inde i admin.
+# Base44-siden kan ikke bruges her: den må ikke vises inde i Shopify.
+application_url = "https://lalatoto-preorder-admin-app.vercel.app"
+embedded = true
 
 [access_scopes]
 # Se docs/forudsaetninger.md for hvorfor hvert scope er her.

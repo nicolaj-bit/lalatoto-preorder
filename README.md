@@ -181,7 +181,7 @@ ikke `iss` fra admin.
 1. *Add New → Project* → vælg `lalatoto-preorder`.
 2. *Root Directory*: `admin-app`. *Framework Preset*: *Other*. Ingen
    build-kommando.
-3. *Deploy*. Adressen (fx `https://lalatoto-preorder.vercel.app`) sættes som
+3. *Deploy*. Adressen (`https://lalatoto-preorder-admin-app.vercel.app`) står som
    `application_url` i `shopify.app.toml` med `embedded = true`, og så køres
    `shopify app deploy`.
 

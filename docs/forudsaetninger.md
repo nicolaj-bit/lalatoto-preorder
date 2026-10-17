@@ -788,3 +788,69 @@ Mulige statusser fra `orderPaymentStatus` ([OrderPaymentStatusResult](https://sh
 4. **Godkender checkout kortet ved 0 % betaling?** Afgør, hvornår et dårligt
    kort opdages. Med Bogus Gateway: nej, ingen transaktioner (3.2). Shopify
    Payments er ikke afprøvet.
+
+## 6. Ved flytning til lalatoto.dk
+
+Tjekliste over det, der skal gøres om på den rigtige butik. Testappen kan
+ikke flyttes: den er bundet til felt-post (tilpasset distribution, 1.2).
+
+### 6.1 Det, vi allerede ved
+
+1. **Ny app med eget Client ID** i Dev Dashboard, tilpasset distribution til
+   lalatoto.dk. Søg `read_all_orders`, abonnements-API'et og
+   betalingsaftale-API'et på `api_access`-siden (1.2), og slå netværksadgang
+   for kundekontoens udvidelser til.
+2. `shopify app deploy`, og **åbn appen fra *Apps* i admin** bagefter, så
+   butikken får appens scopes (README, «Tag det i brug» punkt 2).
+3. **Base44:** sæt `SHOPIFY_STORE_DOMAIN`, `SHOPIFY_CLIENT_ID` og
+   `SHOPIFY_CLIENT_SECRET` til lalatoto.dk og den nye app. Tjek, at begge
+   workflows («Daglig træk af restbeløb» og «Påmindelse før forfald») er
+   registreret og aktive (`base44/README.md`).
+4. **Kundekonti:** sæt «Annuller forudbestilling» ind under
+   *Ordrestatus → Sidehoved → Ordrehandlinger*, og lad Shopifys egen
+   selvbetjening ved annullering være slået fra (README, punkt 6 og 7).
+5. **Temaet:** blokken «Forudbestilling på produktsiden» over
+   læg-i-kurv-knappen (README, punkt 5).
+
+### 6.2 Kundens mails om forudbestillingen (krav fra Nicolaj 2026-10-17)
+
+**Kravet:** Når en kunde lægger en forudbestilling, skal hun ind i ét
+workflow, der sender en mail sammen med ordrebekræftelsen. Indtil varen er
+leveret, må hun **ikke komme i andre workflows**.
+
+**Lalatoto.dk bruger Shopify Email og Shopify Flow** (oplyst af Nicolaj
+2026-10-17). Plan:
+
+1. **Mailen ved bestilling ligger i ordrebekræftelsen**, ikke i et Flow.
+   *Indstillinger → Notifikationer → Ordrebekræftelse* får en blok, der kun
+   vises, når en linje har en forudbestillingsplan
+   (`line.selling_plan_allocation`), med datoen for restbeløb og afsendelse.
+   Grunden: mails fra Shopify Email i Flow er markedsføring og når kun kunder,
+   der har sagt ja til markedsføring (GDPR og markedsføringsloven).
+   Ordrebekræftelsen er en servicemail og når
+   alle — og den kommer præcis samtidig med ordren.
+2. **Flow «Forudbestilling lagt»:** udløser *Ordre oprettet*; betingelse:
+   mindst én linje har en selling plan med navnet «Forudbestilling»;
+   handling: *Tilføj kundetags* `forudbestilling` (og evt. samme tag på
+   ordren).
+3. **Alle andre automatiseringer** i Shopify Email/Flow (velkomst, forladt
+   kurv, efter køb, win-back osv.) får betingelsen «kundens tags indeholder
+   ikke `forudbestilling`» lige efter udløseren.
+4. **Flow «Forudbestilling leveret»:** udløser *Ordre klargjort* (eller
+   *Levering gennemført*) og *Ordre annulleret*; betingelse: ordren har en
+   linje med forudbestillingsplan; handling: *Fjern kundetags*
+   `forudbestilling`.
+
+**Afprøves, før det sættes op:**
+
+- At Flow kan se en linjes selling plan i betingelsen
+  (`order.lineItems.sellingPlan.name`). Ellers bruges ordrens tag, sat af
+  appen.
+- **Flere forudbestillinger på samme kunde:** punkt 4 fjerner tagget ved den
+  første levering, selv om en anden forudbestilling stadig venter. Flow kan
+  ikke let tælle kundens andre åbne ordrer. Sker det i praksis, kan appen
+  (Base44) i stedet sætte og fjerne tagget ud fra alle kundens åbne
+  forudbestillinger.
+- At automatiseringer, der allerede er i gang for kunden, stopper, når
+  tagget sættes. En betingelse tjekkes kun der, hvor den står i flowet;
+  flows med ventetid skal have betingelsen lige før hver mail.

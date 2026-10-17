@@ -32,19 +32,40 @@ export type PreorderPlanOptions = {
   now?: Date;
 };
 
-export function buildPreorderSellingPlanGroupInput(opts: PreorderPlanOptions) {
-  const depositPercent = opts.depositPercent ?? 0;
+/** Det, der afhænger af datoen og depositummet: kundens tekst og politikkerne. */
+function planTerms(chargeAt: Date, depositPercent: number, now?: Date) {
   assertPercent(depositPercent);
   if (depositPercent === 100) {
     // 100 % ved checkout er ikke en forudbestilling med udskudt betaling.
     throw new Error("Depositum på 100 % giver intet restbeløb at udskyde");
   }
-  assertInFuture(opts.chargeAt, opts.now);
-  const chargeAt = opts.chargeAt.toISOString();
-
+  assertInFuture(chargeAt, now);
+  const at = chargeAt.toISOString();
   // Kunden ser planens navn og option i kurv og checkout. Restbeløbet trækkes
   // på en fast dato, så teksten siger datoen — ikke «ved afsendelse».
-  const dueText = formatDanishDate(opts.chargeAt);
+  return {
+    options: [`${depositPercent} % nu, resten ${formatDanishDate(chargeAt)}`],
+    billingPolicy: {
+      fixed: {
+        checkoutCharge: {
+          type: "PERCENTAGE",
+          value: { percentage: depositPercent },
+        },
+        remainingBalanceChargeTrigger: "EXACT_TIME",
+        remainingBalanceChargeExactTime: at,
+      },
+    },
+    deliveryPolicy: {
+      fixed: {
+        fulfillmentTrigger: "EXACT_TIME",
+        fulfillmentExactTime: at,
+      },
+    },
+  };
+}
+
+export function buildPreorderSellingPlanGroupInput(opts: PreorderPlanOptions) {
+  const depositPercent = opts.depositPercent ?? 0;
   return {
     name: opts.groupName ?? "Forudbestilling",
     merchantCode: opts.merchantCode ?? "lalatoto-preorder",
@@ -54,25 +75,24 @@ export function buildPreorderSellingPlanGroupInput(opts: PreorderPlanOptions) {
       {
         name: opts.planName ?? "Forudbestilling",
         category: "PRE_ORDER",
-        options: [`${depositPercent} % nu, resten ${dueText}`],
-        billingPolicy: {
-          fixed: {
-            checkoutCharge: {
-              type: "PERCENTAGE",
-              value: { percentage: depositPercent },
-            },
-            remainingBalanceChargeTrigger: "EXACT_TIME",
-            remainingBalanceChargeExactTime: chargeAt,
-          },
-        },
-        deliveryPolicy: {
-          fixed: {
-            fulfillmentTrigger: "EXACT_TIME",
-            fulfillmentExactTime: chargeAt,
-          },
-        },
+        ...planTerms(opts.chargeAt, depositPercent, opts.now),
         inventoryPolicy: { reserve: "ON_SALE" },
       },
     ],
+  };
+}
+
+/**
+ * Input til sellingPlanGroupUpdate, når datoen flyttes. Depositummet sendes
+ * med uændret, fordi Shopify kræver hele betalingspolitikken.
+ */
+export function buildPreorderDateUpdateInput(opts: {
+  sellingPlanId: string;
+  chargeAt: Date;
+  depositPercent: number;
+  now?: Date;
+}) {
+  return {
+    sellingPlansToUpdate: [{ id: opts.sellingPlanId, ...planTerms(opts.chargeAt, opts.depositPercent, opts.now) }],
   };
 }

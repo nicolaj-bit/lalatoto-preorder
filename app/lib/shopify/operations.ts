@@ -350,3 +350,59 @@ export const PRODUCT_PREORDER_QUERY = /* GraphQL */ `
     }
   }
 `;
+
+/** write_purchase_options. Ny dato på en eksisterende forudbestillingsplan. */
+export const SELLING_PLAN_GROUP_UPDATE = /* GraphQL */ `
+  mutation NyDatoPaaForudbestilling($id: ID!, $input: SellingPlanGroupInput!) {
+    sellingPlanGroupUpdate(id: $id, input: $input) {
+      sellingPlanGroup { id }
+      userErrors { field message code }
+    }
+  }
+`;
+
+/**
+ * Åbne ordrer med udskudt betaling: betalingsplan og planlagt klargøring.
+ * read_orders + read_all_orders + read_payment_terms.
+ */
+export const OPEN_PREORDER_ORDERS_QUERY = /* GraphQL */ `
+  query AabneForudbestillinger($after: String, $query: String) {
+    orders(first: 50, after: $after, query: $query, sortKey: CREATED_AT, reverse: true) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        id
+        name
+        lineItems(first: 20) { nodes { sellingPlan { sellingPlanId } } }
+        paymentTerms { id paymentSchedules(first: 5) { nodes { id dueAt completedAt } } }
+        fulfillmentOrders(first: 10) { nodes { id status fulfillAt } }
+      }
+    }
+  }
+`;
+
+/** write_payment_terms. Flytter forfaldsdatoen på en lagt ordre. */
+export const PAYMENT_TERMS_UPDATE = /* GraphQL */ `
+  mutation NyForfaldsdato($input: PaymentTermsUpdateInput!) {
+    paymentTermsUpdate(input: $input) {
+      paymentTerms { id paymentSchedules(first: 5) { nodes { id dueAt } } }
+      userErrors { field message code }
+    }
+  }
+`;
+
+/** write_merchant_managed_fulfillment_orders. Flytter den planlagte klargøring. */
+export const FULFILLMENT_ORDER_RESCHEDULE = /* GraphQL */ `
+  mutation NyKlargoeringsdato($id: ID!, $fulfillAt: DateTime!) {
+    fulfillmentOrderReschedule(id: $id, fulfillAt: $fulfillAt) {
+      fulfillmentOrder { id fulfillAt }
+      userErrors { field message }
+    }
+  }
+`;
+
+/** read_payment_terms. Skabelonen for betaling på fast dato. */
+export const FIXED_PAYMENT_TERMS_TEMPLATE_QUERY = /* GraphQL */ `
+  query FastDatoSkabelon {
+    paymentTermsTemplates(paymentTermsType: FIXED) { id }
+  }
+`;

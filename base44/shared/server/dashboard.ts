@@ -10,6 +10,16 @@ import { DASHBOARD_ORDERS_QUERY } from "./queries.ts";
 
 const MAX_PAGES = 10;
 
+export type PreorderLine = {
+  productId: string | null;
+  productTitle: string;
+  variantId: string | null;
+  variantTitle: string | null;
+  quantity: number;
+  total: string;
+  imageUrl: string | null;
+};
+
 export type PreorderRow = {
   orderId: string;
   orderNumber: string;
@@ -20,6 +30,8 @@ export type PreorderRow = {
   customer: { name: string | null; email: string | null; phone: string | null };
   shippingAddress: string | null;
   items: string[];
+  /** Kun linjerne med forudbestillingsplan — til oversigten over varianter. */
+  lines: PreorderLine[];
   total: string;
   received: string;
   outstanding: string;
@@ -30,6 +42,20 @@ export type PreorderRow = {
 
 function money(amount: string): string {
   return Number(amount).toFixed(2);
+}
+
+function toLine(l: any): PreorderLine {
+  const variantTitle = l.variant?.title && l.variant.title !== "Default Title" ? l.variant.title : null;
+  return {
+    productId: l.product?.id ?? null,
+    productTitle: l.product?.title ?? l.title,
+    variantId: l.variant?.id ?? null,
+    variantTitle,
+    // Fjernede varer (fx ved delvis annullering) tæller ikke med.
+    quantity: l.currentQuantity ?? l.quantity,
+    total: l.discountedTotalSet ? money(l.discountedTotalSet.shopMoney.amount) : "0.00",
+    imageUrl: l.variant?.image?.url ?? l.image?.url ?? null,
+  };
 }
 
 export function toRow(order: any, store: string, now: Date, lastAttempt?: ChargeAttempt | null): PreorderRow {
@@ -57,6 +83,7 @@ export function toRow(order: any, store: string, now: Date, lastAttempt?: Charge
     },
     shippingAddress: a ? [a.address1, a.address2, [a.zip, a.city].filter(Boolean).join(" "), a.country].filter(Boolean).join(", ") : null,
     items: order.lineItems.nodes.map((l: any) => `${l.quantity} × ${l.title}`),
+    lines: order.lineItems.nodes.filter((l: any) => l.sellingPlan?.sellingPlanId).map(toLine),
     total: money(order.totalPriceSet.shopMoney.amount),
     received: money(order.totalReceivedSet.shopMoney.amount),
     outstanding: money(order.totalOutstandingSet.shopMoney.amount),

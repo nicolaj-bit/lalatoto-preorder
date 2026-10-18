@@ -18,6 +18,7 @@ function row(overrides: Partial<PreorderRow> = {}): PreorderRow {
     customer: { name: "Anna <A&B>", email: "anna@example.com", phone: null },
     shippingAddress: null,
     items: ["1 × Barnevogn"],
+    lines: [],
     total: "548.00",
     received: "0.00",
     outstanding: "548.00",

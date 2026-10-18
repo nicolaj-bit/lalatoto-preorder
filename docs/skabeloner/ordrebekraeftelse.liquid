@@ -3537,7 +3537,7 @@
 <tr class="subtotal-line">
   <td class="subtotal-line__title">
     <p>
-      <span>Skal betales {% if buyer_email_rtl == true %}&rlm;&lrm;<span dir="auto" style="display: inline-block; unicode-bidi: isolate; font-size: inherit;">{% endif %}{{ due_at_date }}{% if buyer_email_rtl == true %}</span>&lrm;&rlm;{% endif %}</span>
+      <span>{% if forudbestillinger != '' and forudbestilling_dato != blank %}Bliver trukket {{ forudbestilling_dato }}{% else %}Skal betales {% if buyer_email_rtl == true %}&rlm;&lrm;<span dir="auto" style="display: inline-block; unicode-bidi: isolate; font-size: inherit;">{% endif %}{{ due_at_date }}{% if buyer_email_rtl == true %}</span>&lrm;&rlm;{% endif %}{% endif %}</span>
     </p>
   </td>
   <td class="subtotal-line__value">
@@ -3799,7 +3799,7 @@
     {% if payment_terms.type == 'receipt' or payment_terms.type == 'fulfillment' and payment_terms.next_payment.due_at == nil %}
       {% if buyer_email_rtl == true %}&rlm;&lrm;<span dir="auto" style="display: inline-block; unicode-bidi: isolate; font-size: inherit;">{% endif %}{{ payment_terms.translated_name }}{% if buyer_email_rtl == true %}</span>&lrm;&rlm;{% endif %}<br>
     {% else %}
-      {% if buyer_email_rtl == true %}&rlm;&lrm;<span dir="auto" style="display: inline-block; unicode-bidi: isolate; font-size: inherit;">{% endif %}{{ payment_terms.translated_name }}{% if buyer_email_rtl == true %}</span>&lrm;&rlm;{% endif %}: Forfalder {% if buyer_email_rtl == true %}&rlm;&lrm;<span dir="auto" style="display: inline-block; unicode-bidi: isolate; font-size: inherit;">{% endif %}{{ due_date | date: '%-d/%-m/%Y' }}{% if buyer_email_rtl == true %}</span>&lrm;&rlm;{% endif %}<br>
+      {% if forudbestillinger != '' and forudbestilling_dato != blank %}Trækkes automatisk {{ forudbestilling_dato }}<br>{% else %}{% if buyer_email_rtl == true %}&rlm;&lrm;<span dir="auto" style="display: inline-block; unicode-bidi: isolate; font-size: inherit;">{% endif %}{{ payment_terms.translated_name }}{% if buyer_email_rtl == true %}</span>&lrm;&rlm;{% endif %}: Forfalder {% if buyer_email_rtl == true %}&rlm;&lrm;<span dir="auto" style="display: inline-block; unicode-bidi: isolate; font-size: inherit;">{% endif %}{{ due_date | date: '%-d/%-m/%Y' }}{% if buyer_email_rtl == true %}</span>&lrm;&rlm;{% endif %}<br>{% endif %}
     {% endif %}
   {% endif %}
   {% if transactions.size > 0 %}

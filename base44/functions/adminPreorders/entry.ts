@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 import { ADMIN_CORS_HEADERS, handleAdminRequest } from '../../shared/server/adminHandler.ts';
-import { runChargeJob } from '../../shared/server/chargeJob.ts';
+import { chargeOrders, runChargeJob } from '../../shared/server/chargeJob.ts';
 import { listPreorderRows } from '../../shared/server/dashboard.ts';
 import { base44AttemptStore, latestAttemptsByOrder } from '../../shared/server/base44Store.ts';
 import { createProductSegment } from '../../shared/server/segment.ts';
@@ -23,6 +23,14 @@ Deno.serve(async (req) => {
       chargePreview: () =>
         runChargeJob({ graphql, store: base44AttemptStore(base44!.asServiceRole.entities), dryRun: true }),
       createSegment: (productId, productTitle) => createProductSegment(graphql, productId, productTitle),
+      charge: async (orderIds) => {
+        const results = await chargeOrders(
+          { graphql, store: base44AttemptStore(base44!.asServiceRole.entities) },
+          orderIds,
+        );
+        console.log('[adminPreorders] træk', JSON.stringify(results));
+        return results;
+      },
     });
   } catch (error) {
     console.error('[adminPreorders]', error);

@@ -53,3 +53,19 @@ export const DASHBOARD_ORDERS_QUERY = /* GraphQL */ `
     }
   }
 `;
+
+/** Ordrens planlagte forsendelser, så de kan åbnes, når restbeløbet er trukket. */
+export const SCHEDULED_FULFILLMENT_ORDERS_QUERY = /* GraphQL */ `
+  query PlanlagteForsendelser($id: ID!) {
+    order(id: $id) { fulfillmentOrders(first: 10) { nodes { id status } } }
+  }
+`;
+
+export const FULFILLMENT_ORDER_OPEN = /* GraphQL */ `
+  mutation AabnForsendelse($id: ID!) {
+    fulfillmentOrderOpen(id: $id) {
+      fulfillmentOrder { id status }
+      userErrors { field message }
+    }
+  }
+`;

@@ -123,3 +123,30 @@ export function segmentQuery(productId) {
 export function rowHasProduct(row, productId) {
   return !productId || productId === 'alle' || (row.lines ?? []).some((l) => l.productId === productId);
 }
+
+/** Ordrer, hvor der stadig mangler at blive trukket et restbeløb. */
+export function isChargeable(row) {
+  return (row.status === 'afventer betaling' || row.status === 'forfalden') && Number(row.outstanding) > 0;
+}
+
+/** Åbne forudbestillinger på et produkt — det «Træk alle» trækker. */
+export function chargeableForProduct(rows, productId) {
+  return rows.filter((r) => isChargeable(r) && rowHasProduct(r, productId));
+}
+
+export function chargeSummary(rows) {
+  return {
+    count: rows.length,
+    amount: rows.reduce((sum, r) => sum + Number(r.outstanding), 0),
+    currency: rows[0]?.currency ?? 'DKK',
+  };
+}
+
+export const OUTCOME_TEXT = {
+  charged: 'Trukket',
+  pending: 'Behandles',
+  failed: 'Afvist',
+  skipped: 'Sprunget over',
+  needs_manual: 'Kontakt kunden',
+  dry_run: 'Prøvekørsel',
+};

@@ -14,7 +14,6 @@
   <body>
     <s-page heading="Forudbestillinger" inlineSize="large">
       <s-button slot="primary-action" variant="primary" id="refresh">Opdatér</s-button>
-      <s-button slot="secondary-actions" id="preview">Hvad trækkes i dag?</s-button>
 
       <!-- Polaris' komponenter ser bort fra hidden, så de skjules med en div udenom. -->
       <div id="error" hidden>
@@ -27,15 +26,23 @@
         <s-grid gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))" gap="base" id="stats"></s-grid>
       </s-section>
 
-      <div id="preview-section" hidden>
-        <s-section heading="Prøvekørsel af dagens træk — der trækkes intet">
-          <s-stack gap="small-200" id="preview-list"></s-stack>
+      <div id="result-section" hidden>
+        <s-section heading="Resultat af træk">
+          <s-stack gap="small-200" id="result-list"></s-stack>
         </s-section>
       </div>
 
+      <s-modal id="charge-modal" heading="Træk restbeløb">
+        <s-stack gap="base" id="charge-modal-body"></s-stack>
+        <s-button slot="primary-action" variant="primary" id="charge-confirm">Træk nu</s-button>
+        <s-button slot="secondary-actions" commandFor="charge-modal" command="--hide">Annuller</s-button>
+      </s-modal>
+
       <s-section heading="Salg pr. variant">
         <s-paragraph color="subdued">
-          Annullerede forudbestillinger tæller ikke med. «Opret segment» laver et
+          Annullerede forudbestillinger tæller ikke med. «Træk alle» trækker
+          restbeløbet på alle åbne forudbestillinger af produktet — brug den,
+          når varen er kommet hjem. «Opret segment» laver et
           kundesegment i Shopify med alle, der har købt produktet, så det kan
           bruges i Shopify Email. Shopify Email sender kun til kunder, der har
           sagt ja til markedsføring.
@@ -78,6 +85,7 @@
             <s-table-header>Forfalder</s-table-header>
             <s-table-header listSlot="inline">Status</s-table-header>
             <s-table-header>Seneste træk</s-table-header>
+            <s-table-header></s-table-header>
           </s-table-header-row>
           <s-table-body id="rows"></s-table-body>
         </s-table>

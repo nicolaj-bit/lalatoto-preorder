@@ -16,10 +16,10 @@ checkout og trække restbeløbet senere via API'et. Oven på det er der nu:
   tilbage, hvis der er trukket noget.
 
 Alt det ovenfor ligger hos Shopify. **Serveren er en Base44-app**
-(Lalatoto Forudbestilling, ikke Club No Sleep). Den skal stå for
-annulleringen, det automatiske træk på forfaldsdatoen og et dashboard med
-kunderne. Base44-delen er ikke bygget endnu, og det er besked ved
-forsinkelse heller ikke.
+(Lalatoto Forudbestilling, ikke Club No Sleep). Den står for
+annulleringen, trækket af restbeløbet og dataene til dashboardet. Trækket er
+manuelt: butikken trykker «Træk» eller «Træk alle» i dashboardet, når varen
+er kommet hjem (`docs/forudsaetninger.md` afsnit 6.3).
 
 Læs først [`docs/forudsaetninger.md`](docs/forudsaetninger.md): krav, kilder,
 hvad Shopify opretter, og hvad der sker, når noget går galt.

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { handleAdminRequest } from "../../base44/shared/server/adminHandler.ts";
 import { verifyAdminIdToken } from "../../base44/shared/server/sessionToken.ts";
 import { createProductSegment } from "../../base44/shared/server/segment.ts";
-import { callAdmin, ENDPOINT, filterRows, orderLink, segmentLink, segmentQuery, totals, variantStats } from "../../admin-app/dashboard.js";
+import { callAdmin, chargeSummary, chargeableForProduct, ENDPOINT, filterRows, orderLink, segmentLink, segmentQuery, totals, variantStats } from "../../admin-app/dashboard.js";
 import { CLIENT_ID, GOOD_PAYLOAD, NOW, SECRET, SHOP, sign } from "../helpers/jwt";
 
 const env = { store: SHOP, clientId: CLIENT_ID, clientSecret: SECRET };
@@ -37,6 +37,7 @@ describe("handleAdminRequest", () => {
     chargePreview: async () => [{ orderId: "o", outcome: "dry_run", detail: "Ville trække 548.00 DKK" }] as any,
     createSegment: async (productId: string, productTitle: string) =>
       ({ ok: true, id: "gid://shopify/Segment/5", name: `Forudbestilt: ${productTitle}`, existed: false }) as const,
+    charge: async (orderIds: string[]) => orderIds.map((orderId) => ({ orderId, outcome: "charged" as const, detail: "548.00 DKK: PURCHASED" })),
   };
   const request = (body: unknown, token = sign(ADMIN), method = "POST") =>
     new Request("https://x.base44.app/api/apps/x/functions/adminPreorders", {
@@ -71,6 +72,18 @@ describe("handleAdminRequest", () => {
     const ok = await (await handleAdminRequest(request({ action: "createSegment", productId: "gid://shopify/Product/1", productTitle: "Slange" }), deps)).json();
     expect(ok).toMatchObject({ ok: true, name: "Forudbestilt: Slange" });
     expect((await handleAdminRequest(request({ action: "createSegment" }), deps)).status).toBe(400);
+  });
+
+  it("trækker kun gyldige ordre-id'er", async () => {
+    const ok = await (await handleAdminRequest(request({ action: "charge", orderIds: ["gid://shopify/Order/1"] }), deps)).json();
+    expect(ok.results[0].outcome).toBe("charged");
+    expect((await handleAdminRequest(request({ action: "charge", orderIds: ["gid://shopify/Customer/1"] }), deps)).status).toBe(400);
+    expect((await handleAdminRequest(request({ action: "charge", orderIds: [] }), deps)).status).toBe(400);
+  });
+
+  it("lader ikke kundekontoens token trække", async () => {
+    const res = await handleAdminRequest(request({ action: "charge", orderIds: ["gid://shopify/Order/1"] }, sign(GOOD_PAYLOAD)), deps);
+    expect(res.status).toBe(401);
   });
 
   it("afviser ukendte handlinger", async () => {
@@ -126,6 +139,17 @@ describe("variantStats", () => {
       ["Sage", 2, 3, 1497],
       ["Sunflower", 1, 1, 499],
     ]);
+  });
+
+  it("«Træk alle» tager kun åbne ordrer med restbeløb", () => {
+    const rs = [
+      { ...rows[0], outstanding: "548.00", currency: "DKK" },
+      { ...rows[1], outstanding: "0.00", currency: "DKK" },
+      { ...rows[2], outstanding: "100.00", currency: "DKK" },
+    ];
+    const open = chargeableForProduct(rs, P);
+    expect(open.map((r: any) => r.orderId)).toEqual(["o1"]);
+    expect(chargeSummary(open)).toEqual({ count: 1, amount: 548, currency: "DKK" });
   });
 
   it("filtrerer ordrelisten på produkt", () => {

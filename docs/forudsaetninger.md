@@ -803,9 +803,9 @@ ikke flyttes: den er bundet til felt-post (tilpasset distribution, 1.2).
 2. `shopify app deploy`, og **åbn appen fra *Apps* i admin** bagefter, så
    butikken får appens scopes (README, «Tag det i brug» punkt 2).
 3. **Base44:** sæt `SHOPIFY_STORE_DOMAIN`, `SHOPIFY_CLIENT_ID` og
-   `SHOPIFY_CLIENT_SECRET` til lalatoto.dk og den nye app. Tjek, at begge
-   workflows («Daglig træk af restbeløb» og «Påmindelse før forfald») er
-   registreret og aktive (`base44/README.md`).
+   `SHOPIFY_CLIENT_SECRET` til lalatoto.dk og den nye app. Tjek, at
+   workflowet «Påmindelse før forfald» er registreret og aktivt, og at
+   «Daglig træk af restbeløb» **ikke** findes (`base44/README.md`).
 4. **Kundekonti:** sæt «Annuller forudbestilling» ind under
    *Ordrestatus → Sidehoved → Ordrehandlinger*, og lad Shopifys egen
    selvbetjening ved annullering være slået fra (README, punkt 6 og 7).
@@ -859,3 +859,22 @@ leveret, må hun **ikke komme i andre workflows**.
   med det flow, der sætter tagget, og kan nå at se kunden uden tag. De
   skal derfor også tjekke selve ordren (har den en forudbestilling) eller
   vente et øjeblik, før de tjekker tagget.
+
+### 6.3 Træk af restbeløb er manuelt (beslutning 2026-10-18)
+
+Varerne kommer sjældent på den planlagte dag, så Nicolaj trækker selv, når
+varen er kommet hjem: knappen «Træk» på ordren eller «Træk alle» ved
+produktet i dashboardet. Det automatiske træk (workflowet «Daglig træk af
+restbeløb») er slået fra. Datoen på produktet er nu den forventede dato, som
+kunden ser; påmindelsen 7 dage før bliver ved.
+
+Når der trækkes, åbnes ordrens planlagte forsendelse (`fulfillmentOrderOpen`),
+så ordren kan sendes med det samme — også før forfaldsdatoen.
+
+**Fragtmodulet (Shipmondo) på lalatoto.dk — ikke afklaret.** En
+forudbestilling er en almindelig Shopify-ordre fra første dag, men den er
+ubetalt, og forsendelsen er «planlagt» til datoen. Om Shipmondo henter den
+med det samme, afhænger af importindstillingerne. Shipmondo kan filtrere på
+ordrestatus og på tags fra Shopify. Afprøves på lalatoto.dk, før der sælges
+forudbestillinger: læg en testforudbestilling, og se, om den dukker op i
+Shipmondo, før restbeløbet er trukket.

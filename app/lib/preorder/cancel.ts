@@ -49,9 +49,9 @@ export type CancelDecision =
 const CANCELLABLE_FULFILLMENT = new Set(["SCHEDULED", "UNFULFILLED", "ON_HOLD"]);
 
 /**
- * @param preorderPlanIds id'er på de selling plans på ordren, Shopify har
- *   bekræftet har category PRE_ORDER. Hentes særskilt, fordi linjen kun
- *   kender planens id og navn.
+ * @param preorderPlanIds id'er på de selling plans på ordren, som er denne
+ *   apps egne PRE_ORDER-planer. Hentes særskilt, fordi linjen kun kender
+ *   planens id og navn.
  */
 export function decideCancel(
   order: CancelOrder | null,

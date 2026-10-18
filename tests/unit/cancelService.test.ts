@@ -17,13 +17,27 @@ const preorder: CancelOrder = {
 };
 
 /** Et falsk Shopify, der svarer ud fra forespørgslens navn og husker kaldene. */
-function fakeShopify(opts: { order?: CancelOrder | null; category?: string; cancelErrors?: string[] } = {}) {
+function fakeShopify(
+  opts: { order?: CancelOrder | null; category?: string; appId?: string | null; merchantCode?: string; cancelErrors?: string[] } = {},
+) {
   const calls: Array<{ name: string; variables?: Record<string, unknown> }> = [];
   const graphql: Graphql = async (query, variables) => {
     const name = /(?:query|mutation)\s+(\w+)/.exec(query)?.[1] ?? "?";
     calls.push({ name, variables });
     if (name === "OrdreTilAnnullering") return { order: opts.order === undefined ? preorder : opts.order } as any;
-    if (name === "PlanKategorier") return { nodes: [{ id: PLAN, category: opts.category ?? "PRE_ORDER" }] } as any;
+    if (name === "AppensForudbestillingsplaner") {
+      return {
+        sellingPlanGroups: {
+          nodes: [
+            {
+              appId: opts.appId === undefined ? "lalatoto-preorder" : opts.appId,
+              merchantCode: opts.merchantCode ?? "lalatoto-preorder-1-1",
+              sellingPlans: { nodes: [{ id: PLAN, category: opts.category ?? "PRE_ORDER" }] },
+            },
+          ],
+        },
+      } as any;
+    }
     if (name === "AnnullerOrdre") {
       return {
         orderCancel: {
@@ -45,10 +59,15 @@ describe("evaluateCancel", () => {
     expect(s.calls).toEqual([]);
   });
 
-  it("slår planens category op og godkender en forudbestilling", async () => {
+  it("slår appens planer op og godkender en forudbestilling", async () => {
     const s = fakeShopify();
     expect((await evaluateCancel(s.graphql, ORDER_ID, CUSTOMER)).ok).toBe(true);
-    expect(s.calls.map((c) => c.name)).toEqual(["OrdreTilAnnullering", "PlanKategorier"]);
+    expect(s.calls.map((c) => c.name)).toEqual(["OrdreTilAnnullering", "AppensForudbestillingsplaner"]);
+  });
+
+  it("afviser en forudbestilling fra en anden app (fx Essential Preorder)", async () => {
+    const s = fakeShopify({ appId: "essential-preorder", merchantCode: "essential-123" });
+    expect(await evaluateCancel(s.graphql, ORDER_ID, CUSTOMER)).toMatchObject({ ok: false, reason: "NOT_PREORDER" });
   });
 
   it("afviser en plan, der ikke er PRE_ORDER", async () => {

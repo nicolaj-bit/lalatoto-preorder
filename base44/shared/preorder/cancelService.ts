@@ -3,7 +3,8 @@
 // udefra, så samme kode bruges af endepunktet (Remix' admin-klient), af
 // scripts og af tests med et falsk Shopify.
 
-import { CANCEL_ORDER_QUERY, ORDER_CANCEL, SELLING_PLAN_CATEGORIES } from "./operations.ts";
+import { CANCEL_ORDER_QUERY, ORDER_CANCEL, OWN_PREORDER_PLANS } from "./operations.ts";
+import { isOwnGroup } from "./catalog.ts";
 import { decideCancel, sellingPlanIds, type CancelDecision, type CancelOrder } from "./cancel.ts";
 
 export type Graphql = <T = any>(query: string, variables?: Record<string, unknown>) => Promise<T>;
@@ -21,13 +22,24 @@ export async function evaluateCancel(
   const { order } = await graphql<{ order: CancelOrder | null }>(CANCEL_ORDER_QUERY, { id: orderId });
   let preorderPlanIds = new Set<string>();
   if (order) {
-    const ids = sellingPlanIds(order);
-    if (ids.length > 0) {
-      const { nodes } = await graphql<{ nodes: Array<{ id: string; category: string } | null> }>(
-        SELLING_PLAN_CATEGORIES,
-        { ids },
-      );
-      preorderPlanIds = new Set(nodes.filter((n) => n?.category === "PRE_ORDER").map((n) => n!.id));
+    const ids = new Set(sellingPlanIds(order));
+    if (ids.size > 0) {
+      // Kun appens egne forudbestillingsplaner. Ordrer fra andre apps
+      // (fx Essential Preorder) kan kunden ikke annullere her.
+      const { sellingPlanGroups } = await graphql<{
+        sellingPlanGroups: {
+          nodes: Array<{
+            appId: string | null;
+            merchantCode: string;
+            sellingPlans: { nodes: Array<{ id: string; category: string | null }> };
+          }>;
+        };
+      }>(OWN_PREORDER_PLANS);
+      for (const group of sellingPlanGroups.nodes.filter(isOwnGroup)) {
+        for (const plan of group.sellingPlans.nodes) {
+          if (plan.category === "PRE_ORDER" && ids.has(plan.id)) preorderPlanIds.add(plan.id);
+        }
+      }
     }
   }
   return decideCancel(order, { customerId, preorderPlanIds });

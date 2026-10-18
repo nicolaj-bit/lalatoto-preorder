@@ -252,6 +252,23 @@ export const SELLING_PLAN_CATEGORIES = /* GraphQL */ `
   }
 `;
 
+/**
+ * Planerne i alle selling plan-grupper med deres ejer. Annulleringen bruger
+ * den til kun at godkende forudbestillinger lavet med denne app — ikke fx
+ * Essential Preorder, som også laver PRE_ORDER-planer.
+ */
+export const OWN_PREORDER_PLANS = /* GraphQL */ `
+  query AppensForudbestillingsplaner {
+    sellingPlanGroups(first: 50) {
+      nodes {
+        appId
+        merchantCode
+        sellingPlans(first: 5) { nodes { id category } }
+      }
+    }
+  }
+`;
+
 /** read_products + read_purchase_options. Alle grupper; appen filtrerer sine egne fra. */
 export const PREORDER_GROUPS_QUERY = /* GraphQL */ `
   query Forudbestillinger {

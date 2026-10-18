@@ -12,7 +12,11 @@ gennem API'et, så de rettes i admin under
 
 ## 1. Ordrebekræftelse
 
-Sæt blokken ind lige over oversigten over varerne. Den vises kun, når en
+**Hurtigst:** hele skabelonen ligger færdig og på dansk i
+[`skabeloner/ordrebekraeftelse.liquid`](skabeloner/ordrebekraeftelse.liquid).
+Erstat alt i «Rediger kode» med den, og gem.
+
+**Eller selv:** sæt blokken ind lige over oversigten over varerne. Den vises kun, når en
 linje er købt med en forudbestillingsplan (`selling_plan_allocation`).
 Datoen kommer fra produktets metafelt `lalatoto_preorder.info`, som blokken
 «Forudbestilling» på produktet skriver og opdaterer, når datoen flyttes.

@@ -1,0 +1,13 @@
+{
+  "name": "ShopAccess",
+  "type": "object",
+  "description": "Offline-token til butikkens Admin API, hentet med token exchange, når dashboardet åbnes i Shopify admin. Bruges, når butikken ikke ligger i appens organisation (lalatoto.dk). Læses og skrives kun af funktionerne med service role.",
+  "properties": {
+    "shop": { "type": "string", "description": "Butikkens myshopify-domæne, fx lalatoto.myshopify.com" },
+    "access_token": { "type": "string", "description": "Offline-token (hemmeligt)" },
+    "scope": { "type": "string", "description": "De scopes, tokenet blev givet med" },
+    "obtained_at": { "type": "string", "format": "date-time" }
+  },
+  "required": ["shop", "access_token", "obtained_at"],
+  "rls": { "create": { "user_condition": { "role": "__ingen__" } }, "read": { "user_condition": { "role": "__ingen__" } }, "update": { "user_condition": { "role": "__ingen__" } }, "delete": { "user_condition": { "role": "__ingen__" } } }
+}

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 import { runReminderJob } from '../../shared/server/reminderJob.ts';
+import { base44TokenStore } from '../../shared/server/base44Store.ts';
 import { createShopifyGraphql, shopifyEnv } from '../../shared/server/shopify.ts';
 
 // Sender én mail til appens admin-brugere med de forudbestillinger, der
@@ -15,7 +16,7 @@ Deno.serve(async (req) => {
     }
     const body = await req.json().catch(() => ({}));
     const env = shopifyEnv((k) => Deno.env.get(k));
-    const { rows, email } = await runReminderJob({ graphql: createShopifyGraphql(env), store: env.store });
+    const { rows, email } = await runReminderJob({ graphql: createShopifyGraphql(env, fetch, base44TokenStore(base44.asServiceRole.entities)), store: env.store });
     if (!email) return Response.json({ ok: true, sent: [], orders: [] });
 
     const admins = await base44.asServiceRole.entities.User.filter({ role: 'admin' });

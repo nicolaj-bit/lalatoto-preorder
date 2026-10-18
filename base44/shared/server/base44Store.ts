@@ -1,6 +1,7 @@
 // Forsøg på træk gemt i Base44-entiteten PreorderCharge.
 
 import type { AttemptStore, ChargeAttempt } from "./chargeJob.ts";
+import type { TokenStore } from "./shopify.ts";
 
 /** Base44-SDK'ets entities (asServiceRole.entities). Typet løst, som SDK'et. */
 // deno-lint-ignore no-explicit-any
@@ -54,4 +55,20 @@ export async function latestAttemptsByOrder(entities: Entities): Promise<Map<str
   const map = new Map<string, ChargeAttempt>();
   for (const r of rows) if (!map.has(r.order_id)) map.set(r.order_id, fromRecord(r));
   return map;
+}
+
+/** Offline-tokenet pr. butik i entiteten ShopAccess. */
+export function base44TokenStore(entities: Entities): TokenStore {
+  return {
+    async get(shop) {
+      const rows = await entities.ShopAccess.filter({ shop }, "-obtained_at", 1);
+      return rows[0]?.access_token ?? null;
+    },
+    async set(shop, accessToken, scope) {
+      const rows = await entities.ShopAccess.filter({ shop }, "-obtained_at", 1);
+      const record = { shop, access_token: accessToken, scope, obtained_at: new Date().toISOString() };
+      if (rows[0]) await entities.ShopAccess.update(rows[0].id, record);
+      else await entities.ShopAccess.create(record);
+    },
+  };
 }

@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 import { listPreorderRows } from '../../shared/server/dashboard.ts';
-import { latestAttemptsByOrder } from '../../shared/server/base44Store.ts';
+import { latestAttemptsByOrder, base44TokenStore } from '../../shared/server/base44Store.ts';
 import { createShopifyGraphql, shopifyEnv } from '../../shared/server/shopify.ts';
 
 // Dashboardets liste over forudbestillinger og kunder. Kun for admin.
@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     if (!user || user.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
     const env = shopifyEnv((k) => Deno.env.get(k));
     const attempts = await latestAttemptsByOrder(base44.asServiceRole.entities);
-    const rows = await listPreorderRows(createShopifyGraphql(env), {
+    const rows = await listPreorderRows(createShopifyGraphql(env, fetch, base44TokenStore(base44.asServiceRole.entities)), {
       store: env.store,
       attempts: (orderId) => attempts.get(orderId),
     });

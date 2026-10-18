@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 import { runChargeJob } from '../../shared/server/chargeJob.ts';
-import { base44AttemptStore } from '../../shared/server/base44Store.ts';
+import { base44AttemptStore, base44TokenStore } from '../../shared/server/base44Store.ts';
 import { createShopifyGraphql, shopifyEnv } from '../../shared/server/shopify.ts';
 
 // Trækker restbeløbet på forfaldne forudbestillinger. Køres dagligt af
@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const env = shopifyEnv((k) => Deno.env.get(k));
     const results = await runChargeJob({
-      graphql: createShopifyGraphql(env),
+      graphql: createShopifyGraphql(env, fetch, base44TokenStore(base44.asServiceRole.entities)),
       store: base44AttemptStore(base44.asServiceRole.entities),
       dryRun: body?.dryRun === true,
     });

@@ -18,17 +18,28 @@ Erstat alt i «Rediger kode» med den, og gem.
 
 **Eller selv:** sæt blokken ind lige over oversigten over varerne. Den vises kun, når en
 linje er købt med en forudbestillingsplan (`selling_plan_allocation`).
-Datoen kommer fra produktets metafelt `lalatoto_preorder.info`, som blokken
-«Forudbestilling» på produktet skriver og opdaterer, når datoen flyttes.
+Datoen kommer fra ordrens egen betalingsaftale
+(`payment_terms.next_payment.due_at`), så den passer, også når datoen flyttes.
+Produktets metafelt kan notifikationerne ikke læse (afprøvet 2026-10-18).
 
 ```liquid
 {% assign forudbestillinger = '' %}
 {% for line in line_items %}
   {% if line.selling_plan_allocation %}
     {% assign forudbestillinger = forudbestillinger | append: line.title | append: '|' %}
-    {% assign forudbestilling_dato = line.product.metafields.lalatoto_preorder.info.value.chargeDateText %}
   {% endif %}
 {% endfor %}
+{%- comment -%}
+  Datoen tages fra ordrens betalingsaftale, så den passer, også når datoen
+  flyttes. Liquids date-filter kender ikke danske månedsnavne.
+{%- endcomment -%}
+{% assign forudbestilling_dato = '' %}
+{% assign forfald = payment_terms.next_payment.due_at %}
+{% if forfald %}
+  {% assign maaneder = 'januar,februar,marts,april,maj,juni,juli,august,september,oktober,november,december' | split: ',' %}
+  {% assign maaned_nr = forfald | date: '%-m' | minus: 1 %}
+  {% capture forudbestilling_dato %}{{ forfald | date: '%-d' }}. {{ maaneder[maaned_nr] }} {{ forfald | date: '%Y' }}{% endcapture %}
+{% endif %}
 {% if forudbestillinger != '' %}
   <table class="row"><tr><td>
     <h3>Din forudbestilling</h3>
@@ -76,9 +87,15 @@ og blok B **helt nederst** (efter alt andet). Gem, og tryk «Forhåndsvis».
 {%- for line in line_items -%}
   {%- if line.selling_plan_allocation -%}
     {%- assign er_forudbestilling = true -%}
-    {%- assign forudbestilling_dato = line.product.metafields.lalatoto_preorder.info.value.chargeDateText -%}
   {%- endif -%}
 {%- endfor -%}
+{%- assign forudbestilling_dato = '' -%}
+{%- assign forfald = payment_terms.next_payment.due_at -%}
+{%- if forfald -%}
+  {%- assign maaneder = 'januar,februar,marts,april,maj,juni,juli,august,september,oktober,november,december' | split: ',' -%}
+  {%- assign maaned_nr = forfald | date: '%-m' | minus: 1 -%}
+  {%- capture forudbestilling_dato -%}{{ forfald | date: '%-d' }}. {{ maaneder[maaned_nr] }} {{ forfald | date: '%Y' }}{%- endcapture -%}
+{%- endif -%}
 {%- if er_forudbestilling -%}
 <!DOCTYPE html>
 <html lang="da">
@@ -153,8 +170,11 @@ bruges kun, når ordren ikke er en forudbestilling.
 - 2026-10-17, felt-post: Med skabelonen i `skabeloner/ordrefaktura.liquid`
   kom mailen om ny dato på dansk, med datoen og uden «Betal nu».
 
+- 2026-10-18, felt-post, #1006: Blokken «Din forudbestilling» vises kun ved
+  forudbestilling. Metafeltet var tomt i mailen; «Skal betales 24/10/2026»
+  fra betalingsaftalen virkede.
+
 ## Ikke afprøvet endnu
 
-- At `line.selling_plan_allocation` og metafeltets `.value.chargeDateText`
-  virker i notifikationernes Liquid. Afprøves med en ny testordre og
-  «Forhåndsvis» i skabelonen.
+- Ordrebekræftelsen med datoen fra betalingsaftalen. 2026-10-18 viste #1006
+  blokken korrekt, men uden dato, fordi den dengang læste metafeltet.

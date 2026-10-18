@@ -323,9 +323,19 @@
 {% for line in line_items %}
   {% if line.selling_plan_allocation %}
     {% assign forudbestillinger = forudbestillinger | append: line.title | append: '|' %}
-    {% assign forudbestilling_dato = line.product.metafields.lalatoto_preorder.info.value.chargeDateText %}
   {% endif %}
 {% endfor %}
+{%- comment -%}
+  Datoen tages fra ordrens betalingsaftale, så den passer, også når datoen
+  flyttes. Liquids date-filter kender ikke danske månedsnavne.
+{%- endcomment -%}
+{% assign forudbestilling_dato = '' %}
+{% assign forfald = payment_terms.next_payment.due_at %}
+{% if forfald %}
+  {% assign maaneder = 'januar,februar,marts,april,maj,juni,juli,august,september,oktober,november,december' | split: ',' %}
+  {% assign maaned_nr = forfald | date: '%-m' | minus: 1 %}
+  {% capture forudbestilling_dato %}{{ forfald | date: '%-d' }}. {{ maaneder[maaned_nr] }} {{ forfald | date: '%Y' }}{% endcapture %}
+{% endif %}
 {% if forudbestillinger != '' %}
 <table class="row section">
   <tr>

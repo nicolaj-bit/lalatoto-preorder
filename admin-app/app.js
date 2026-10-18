@@ -1,7 +1,7 @@
 // Dashboardet inde i Shopify admin. Bygges med Polaris' web components, så
 // det ligner resten af admin. Data kommer fra Base44 (adminPreorders).
 import {
-  STATUS_TONE, callAdmin, filterRows, formatDate, formatMoney, orderLink, segmentQuery, totals, variantStats,
+  STATUS_TONE, callAdmin, filterRows, formatDate, formatMoney, orderLink, segmentLink, segmentQuery, totals, variantStats,
 } from './dashboard.js';
 
 const $ = (id) => document.getElementById(id);
@@ -84,13 +84,18 @@ function thumb(url, title) {
     : h('s-box', { inlineSize: '40px', blockSize: '40px' });
 }
 
-async function copySegment(product) {
-  const query = segmentQuery(product.productId);
+async function createSegment(product, button) {
+  button.setAttribute('loading', '');
   try {
-    await navigator.clipboard.writeText(query);
-    window.shopify.toast.show('Segment kopieret — sæt det ind under Kunder → Segmenter');
-  } catch {
-    window.prompt('Kopiér forespørgslen til segmentet:', query);
+    const res = await callAdmin('createSegment', idToken, { productId: product.productId, productTitle: product.title });
+    window.shopify.toast.show(res.existed ? `Segmentet «${res.name}» fandtes allerede` : `Segmentet «${res.name}» er oprettet`);
+    // Åbn segmentet i Shopify, så det kan bruges i Shopify Email med det samme.
+    window.open(segmentLink(res.id), '_top');
+  } catch (error) {
+    // Uden write_customers eller ved fejl: giv forespørgslen, så den kan sættes ind i hånden.
+    window.prompt(`Kunne ikke oprette segmentet (${error.message}). Kopiér forespørgslen og sæt den ind under Kunder → Segmenter:`, segmentQuery(product.productId));
+  } finally {
+    button.removeAttribute('loading');
   }
 }
 
@@ -108,7 +113,7 @@ function renderVariants() {
       h('s-table-cell', {}, ''),
       h('s-table-cell', {}, h('s-text', { type: 'strong' }, formatMoney(p.total, currency))),
       h('s-table-cell', {},
-        p.productId && h('s-button', { variant: 'tertiary', 'data-product': p.productId }, 'Kopiér segment'))));
+        p.productId && h('s-button', { variant: 'tertiary', 'data-product': p.productId }, 'Opret segment'))));
     if (p.variants.length > 1 || p.variants[0]?.title) {
       for (const v of p.variants) {
         out.push(h('s-table-row', {},
@@ -128,7 +133,7 @@ function renderVariants() {
   );
   for (const btn of $('variant-rows').querySelectorAll('s-button[data-product]')) {
     const product = stats.find((p) => p.productId === btn.dataset.product);
-    btn.addEventListener('click', () => copySegment(product));
+    btn.addEventListener('click', () => createSegment(product, btn));
   }
 
   // Produktfilteret over ordrelisten.

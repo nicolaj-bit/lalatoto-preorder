@@ -323,9 +323,19 @@
 {% for line in line_items %}
   {% if line.selling_plan_allocation %}
     {% assign forudbestillinger = forudbestillinger | append: line.title | append: '|' %}
-    {% assign forudbestilling_dato = line.product.metafields.lalatoto_preorder.info.value.chargeDateText %}
   {% endif %}
 {% endfor %}
+{%- comment -%}
+  Datoen tages fra ordrens betalingsaftale, så den passer, også når datoen
+  flyttes. Liquids date-filter kender ikke danske månedsnavne.
+{%- endcomment -%}
+{% assign forudbestilling_dato = '' %}
+{% assign forfald = payment_terms.next_payment.due_at %}
+{% if forfald %}
+  {% assign maaneder = 'januar,februar,marts,april,maj,juni,juli,august,september,oktober,november,december' | split: ',' %}
+  {% assign maaned_nr = forfald | date: '%-m' | minus: 1 %}
+  {% capture forudbestilling_dato %}{{ forfald | date: '%-d' }}. {{ maaneder[maaned_nr] }} {{ forfald | date: '%Y' }}{% endcapture %}
+{% endif %}
 {% if forudbestillinger != '' %}
 <table class="row section">
   <tr>
@@ -3527,7 +3537,7 @@
 <tr class="subtotal-line">
   <td class="subtotal-line__title">
     <p>
-      <span>Skal betales {% if buyer_email_rtl == true %}&rlm;&lrm;<span dir="auto" style="display: inline-block; unicode-bidi: isolate; font-size: inherit;">{% endif %}{{ due_at_date }}{% if buyer_email_rtl == true %}</span>&lrm;&rlm;{% endif %}</span>
+      <span>{% if forudbestillinger != '' and forudbestilling_dato != blank %}Bliver trukket {{ forudbestilling_dato }}{% else %}Skal betales {% if buyer_email_rtl == true %}&rlm;&lrm;<span dir="auto" style="display: inline-block; unicode-bidi: isolate; font-size: inherit;">{% endif %}{{ due_at_date }}{% if buyer_email_rtl == true %}</span>&lrm;&rlm;{% endif %}{% endif %}</span>
     </p>
   </td>
   <td class="subtotal-line__value">
@@ -3789,7 +3799,7 @@
     {% if payment_terms.type == 'receipt' or payment_terms.type == 'fulfillment' and payment_terms.next_payment.due_at == nil %}
       {% if buyer_email_rtl == true %}&rlm;&lrm;<span dir="auto" style="display: inline-block; unicode-bidi: isolate; font-size: inherit;">{% endif %}{{ payment_terms.translated_name }}{% if buyer_email_rtl == true %}</span>&lrm;&rlm;{% endif %}<br>
     {% else %}
-      {% if buyer_email_rtl == true %}&rlm;&lrm;<span dir="auto" style="display: inline-block; unicode-bidi: isolate; font-size: inherit;">{% endif %}{{ payment_terms.translated_name }}{% if buyer_email_rtl == true %}</span>&lrm;&rlm;{% endif %}: Forfalder {% if buyer_email_rtl == true %}&rlm;&lrm;<span dir="auto" style="display: inline-block; unicode-bidi: isolate; font-size: inherit;">{% endif %}{{ due_date | date: '%-d/%-m/%Y' }}{% if buyer_email_rtl == true %}</span>&lrm;&rlm;{% endif %}<br>
+      {% if forudbestillinger != '' and forudbestilling_dato != blank %}Trækkes automatisk {{ forudbestilling_dato }}<br>{% else %}{% if buyer_email_rtl == true %}&rlm;&lrm;<span dir="auto" style="display: inline-block; unicode-bidi: isolate; font-size: inherit;">{% endif %}{{ payment_terms.translated_name }}{% if buyer_email_rtl == true %}</span>&lrm;&rlm;{% endif %}: Forfalder {% if buyer_email_rtl == true %}&rlm;&lrm;<span dir="auto" style="display: inline-block; unicode-bidi: isolate; font-size: inherit;">{% endif %}{{ due_date | date: '%-d/%-m/%Y' }}{% if buyer_email_rtl == true %}</span>&lrm;&rlm;{% endif %}<br>{% endif %}
     {% endif %}
   {% endif %}
   {% if transactions.size > 0 %}

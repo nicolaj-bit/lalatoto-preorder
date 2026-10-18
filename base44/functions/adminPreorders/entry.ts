@@ -3,6 +3,7 @@ import { ADMIN_CORS_HEADERS, handleAdminRequest } from '../../shared/server/admi
 import { runChargeJob } from '../../shared/server/chargeJob.ts';
 import { listPreorderRows } from '../../shared/server/dashboard.ts';
 import { base44AttemptStore, latestAttemptsByOrder } from '../../shared/server/base44Store.ts';
+import { createProductSegment } from '../../shared/server/segment.ts';
 import { createShopifyGraphql, shopifyEnv } from '../../shared/server/shopify.ts';
 
 // Dashboardet inde i Shopify admin (admin-app/ på Vercel) — uden Base44-login.
@@ -21,6 +22,7 @@ Deno.serve(async (req) => {
       },
       chargePreview: () =>
         runChargeJob({ graphql, store: base44AttemptStore(base44!.asServiceRole.entities), dryRun: true }),
+      createSegment: (productId, productTitle) => createProductSegment(graphql, productId, productTitle),
     });
   } catch (error) {
     console.error('[adminPreorders]', error);

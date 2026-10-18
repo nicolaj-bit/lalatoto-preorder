@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { handleAdminRequest } from "../../base44/shared/server/adminHandler.ts";
 import { verifyAdminIdToken } from "../../base44/shared/server/sessionToken.ts";
-import { callAdmin, ENDPOINT, filterRows, orderLink, segmentQuery, totals, variantStats } from "../../admin-app/dashboard.js";
+import { createProductSegment } from "../../base44/shared/server/segment.ts";
+import { callAdmin, ENDPOINT, filterRows, orderLink, segmentLink, segmentQuery, totals, variantStats } from "../../admin-app/dashboard.js";
 import { CLIENT_ID, GOOD_PAYLOAD, NOW, SECRET, SHOP, sign } from "../helpers/jwt";
 
 const env = { store: SHOP, clientId: CLIENT_ID, clientSecret: SECRET };
@@ -34,6 +35,8 @@ describe("handleAdminRequest", () => {
     now: NOW,
     listRows: async () => [{ orderNumber: "#1001" }] as any,
     chargePreview: async () => [{ orderId: "o", outcome: "dry_run", detail: "Ville trække 548.00 DKK" }] as any,
+    createSegment: async (productId: string, productTitle: string) =>
+      ({ ok: true, id: "gid://shopify/Segment/5", name: `Forudbestilt: ${productTitle}`, existed: false }) as const,
   };
   const request = (body: unknown, token = sign(ADMIN), method = "POST") =>
     new Request("https://x.base44.app/api/apps/x/functions/adminPreorders", {
@@ -62,6 +65,12 @@ describe("handleAdminRequest", () => {
     });
     expect(res.status).toBe(401);
     expect(called).toBe(false);
+  });
+
+  it("opretter segment og kræver produkt", async () => {
+    const ok = await (await handleAdminRequest(request({ action: "createSegment", productId: "gid://shopify/Product/1", productTitle: "Slange" }), deps)).json();
+    expect(ok).toMatchObject({ ok: true, name: "Forudbestilt: Slange" });
+    expect((await handleAdminRequest(request({ action: "createSegment" }), deps)).status).toBe(400);
   });
 
   it("afviser ukendte handlinger", async () => {
@@ -95,7 +104,7 @@ describe("admin-app/dashboard.js", () => {
       seen.push({ url, auth: init.headers.Authorization, body: init.body });
       return new Response(JSON.stringify({ ok: false, error: "Ingen adgang" }), { status: 401 });
     };
-    await expect(callAdmin("list", async () => "tok", fakeFetch)).rejects.toThrow("Ingen adgang");
+    await expect(callAdmin("list", async () => "tok", {}, fakeFetch)).rejects.toThrow("Ingen adgang");
     expect(seen[0]).toEqual({ url: ENDPOINT, auth: "Bearer tok", body: JSON.stringify({ action: "list" }) });
   });
 });
@@ -126,5 +135,31 @@ describe("variantStats", () => {
 
   it("laver Shopifys segmentforespørgsel med produktets tal-id", () => {
     expect(segmentQuery("gid://shopify/Product/11362090942806")).toBe("products_purchased(id: 11362090942806) = true");
+  });
+});
+
+describe("createProductSegment", () => {
+  it("opretter segmentet med produktets tal-id", async () => {
+    const calls: any[] = [];
+    const graphql: any = async (q: string, v: any) => {
+      calls.push(v);
+      return { segmentCreate: { segment: { id: "gid://shopify/Segment/7", name: v.name, query: v.query }, userErrors: [] } };
+    };
+    const r = await createProductSegment(graphql, "gid://shopify/Product/42", "Luksus sengeslange");
+    expect(r).toEqual({ ok: true, id: "gid://shopify/Segment/7", name: "Forudbestilt: Luksus sengeslange", existed: false });
+    expect(calls[0].query).toBe("products_purchased(id: 42) = true");
+    expect(segmentLink("gid://shopify/Segment/7")).toBe("shopify://admin/customers/segments/7");
+  });
+
+  it("genbruger et segment med samme navn", async () => {
+    const graphql: any = async (q: string) =>
+      q.includes("segmentCreate")
+        ? { segmentCreate: { segment: null, userErrors: [{ field: ["name"], message: "Name has already been taken" }] } }
+        : { segments: { nodes: [{ id: "gid://shopify/Segment/8", name: "Forudbestilt: X", query: "" }] } };
+    expect(await createProductSegment(graphql, "gid://shopify/Product/1", "X")).toMatchObject({ ok: true, id: "gid://shopify/Segment/8", existed: true });
+  });
+
+  it("afviser andet end et produkt-id", async () => {
+    expect(await createProductSegment((async () => ({})) as any, "gid://shopify/Order/1", "X")).toEqual({ ok: false, error: "Ugyldigt produkt" });
   });
 });

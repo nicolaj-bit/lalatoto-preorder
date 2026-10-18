@@ -16,7 +16,9 @@ embedded = true
 # i ordrens handlingsmenu har dem.
 # write_payment_terms og write_merchant_managed_fulfillment_orders flytter
 # forfalds- og klargøringsdatoen på lagte ordrer, når datoen ændres.
-scopes = "write_products,read_products,write_purchase_options,read_purchase_options,read_orders,write_orders,read_all_orders,read_customers,read_payment_terms,read_payment_mandate,write_payment_mandate,read_publications,write_publications,customer_read_orders,customer_read_customers,write_payment_terms,write_merchant_managed_fulfillment_orders"
+# write_customers opretter kundesegmentet pr. produkt fra dashboardet
+# (segmentCreate). Appen ændrer ikke selve kunderne.
+scopes = "write_products,read_products,write_purchase_options,read_purchase_options,read_orders,write_orders,read_all_orders,read_customers,write_customers,read_payment_terms,read_payment_mandate,write_payment_mandate,read_publications,write_publications,customer_read_orders,customer_read_customers,write_payment_terms,write_merchant_managed_fulfillment_orders"
 optional_scopes = [ ]
 use_legacy_install_flow = false
 

@@ -2,16 +2,18 @@
 // (admin-app/, ligger på Vercel).
 //
 //   POST { action: "list" | "chargePreview" }
+//   POST { action: "createSegment", productId, productTitle }
 //   Authorization: Bearer <ID token fra App Bridge>
 //
 // Base44-siden må ikke vises inde i Shopify (den sender X-Frame-Options:
 // DENY), så dashboardet i admin er en selvstændig side. Den har intet
 // Base44-login; den, der har appen åben i butikkens admin, godkendes med
-// App Bridges ID token. Funktionen ændrer intet: prøvekørslen af trækket
-// trækker ingen penge.
+// App Bridges ID token. Prøvekørslen af trækket trækker ingen penge; det
+// eneste, funktionen opretter, er et kundesegment pr. produkt.
 
 import type { PreorderRow } from "./dashboard.ts";
 import type { JobResult } from "./chargeJob.ts";
+import type { SegmentResult } from "./segment.ts";
 import { verifyAdminIdToken } from "./sessionToken.ts";
 import type { ShopifyEnv } from "./shopify.ts";
 
@@ -36,6 +38,7 @@ export async function handleAdminRequest(
     env: ShopifyEnv;
     listRows: () => Promise<PreorderRow[]>;
     chargePreview: () => Promise<JobResult[]>;
+    createSegment: (productId: string, productTitle: string) => Promise<SegmentResult>;
     now?: Date;
   },
 ): Promise<Response> {
@@ -51,8 +54,17 @@ export async function handleAdminRequest(
   });
   if (!verified.ok) return json({ ok: false, error: "Ingen adgang" }, 401);
 
-  const body = (await req.json().catch(() => null)) as { action?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as
+    | { action?: unknown; productId?: unknown; productTitle?: unknown }
+    | null;
   if (body?.action === "list") return json({ ok: true, rows: await deps.listRows() });
   if (body?.action === "chargePreview") return json({ ok: true, results: await deps.chargePreview() });
+  if (body?.action === "createSegment") {
+    if (typeof body.productId !== "string" || typeof body.productTitle !== "string") {
+      return json({ ok: false, error: "Produkt mangler" }, 400);
+    }
+    const result = await deps.createSegment(body.productId, body.productTitle);
+    return json(result, result.ok ? 200 : 422);
+  }
   return json({ ok: false, error: "Ukendt handling" }, 400);
 }

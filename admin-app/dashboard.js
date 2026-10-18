@@ -57,7 +57,7 @@ export function totals(rows) {
  * Kalder Base44-funktionen adminPreorders. `getToken` er App Bridges
  * shopify.idToken — tokenet lever kun et minut, så der hentes et nyt hver gang.
  */
-export async function callAdmin(action, getToken, fetchImpl = fetch) {
+export async function callAdmin(action, getToken, extra = {}, fetchImpl = fetch) {
   const token = await getToken();
   const res = await fetchImpl(ENDPOINT, {
     method: 'POST',
@@ -66,7 +66,7 @@ export async function callAdmin(action, getToken, fetchImpl = fetch) {
       'Content-Type': 'application/json',
       'X-App-Id': BASE44_APP_ID,
     },
-    body: JSON.stringify({ action }),
+    body: JSON.stringify({ ...extra, action }),
   });
   const body = await res.json().catch(() => null);
   if (!body?.ok) throw new Error(body?.error ?? `HTTP ${res.status}`);
@@ -108,6 +108,11 @@ export function variantStats(rows) {
   return [...products.values()]
     .map((p) => ({ ...finish(p), variants: [...p.variants.values()].map(finish).sort(byUnits) }))
     .sort(byUnits);
+}
+
+/** Link til segmentet i admin. */
+export function segmentLink(segmentId) {
+  return `shopify://admin/customers/segments/${String(segmentId).split('/').pop()}`;
 }
 
 /** Shopifys segmentforespørgsel for kunder, der har købt produktet. */

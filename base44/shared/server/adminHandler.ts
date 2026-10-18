@@ -45,6 +45,8 @@ export async function handleAdminRequest(
     chargePreview: () => Promise<JobResult[]>;
     createSegment: (productId: string, productTitle: string) => Promise<SegmentResult>;
     charge: (orderIds: string[]) => Promise<JobResult[]>;
+    /** Kaldes med det kontrollerede ID token, når dashboardet hentes (action «list»). */
+    onVerified?: (idToken: string) => Promise<void>;
     now?: Date;
   },
 ): Promise<Response> {
@@ -63,7 +65,10 @@ export async function handleAdminRequest(
   const body = (await req.json().catch(() => null)) as
     | { action?: unknown; productId?: unknown; productTitle?: unknown; orderIds?: unknown }
     | null;
-  if (body?.action === "list") return json({ ok: true, rows: await deps.listRows() });
+  if (body?.action === "list") {
+    await deps.onVerified?.(token);
+    return json({ ok: true, rows: await deps.listRows() });
+  }
   if (body?.action === "chargePreview") return json({ ok: true, results: await deps.chargePreview() });
   if (body?.action === "createSegment") {
     if (typeof body.productId !== "string" || typeof body.productTitle !== "string") {

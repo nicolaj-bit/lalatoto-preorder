@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 import { handleCancelRequest, CORS_HEADERS } from '../../shared/server/cancelHandler.ts';
+import { base44TokenStore } from '../../shared/server/base44Store.ts';
 import { createShopifyGraphql, shopifyEnv } from '../../shared/server/shopify.ts';
 
 // Kaldes af knappen «Annuller forudbestilling» i Shopifys kundekonto — uden
@@ -11,7 +12,7 @@ Deno.serve(async (req) => {
     const base44 = req.method === 'POST' ? createClientFromRequest(req) : null;
     return await handleCancelRequest(req, {
       env,
-      graphql: createShopifyGraphql(env),
+      graphql: createShopifyGraphql(env, fetch, base44 ? base44TokenStore(base44.asServiceRole.entities) : undefined),
       log: async (entry) => {
         await base44?.asServiceRole.entities.PreorderCancellation.create({
           order_id: entry.orderId,

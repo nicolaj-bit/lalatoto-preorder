@@ -796,14 +796,21 @@ ikke flyttes: den er bundet til felt-post (tilpasset distribution, 1.2).
 
 ### 6.1 Det, vi allerede ved
 
-**Status 2026-10-18:** Appen «Lalatoto Forudbestilling Live» er oprettet
-(Client ID `3d9403c7e9bc3df3a886bc3c6d945bc6`) og forbundet i
-`shopify.app.live.toml`. Dashboardet til den ligger på `admin-app/live/`,
-fordi App Bridge kun kender ét Client ID pr. side. `shopify app deploy
---config live` afvises, indtil Shopify har godkendt `read_all_orders`,
-`read_payment_mandate` og `write_payment_mandate` for den nye app (punkt 1).
+**Status 2026-10-18:** Appen «Lalatoto Forudbestilling Live» (Client ID
+`3d9403c7e9bc3df3a886bc3c6d945bc6`, `shopify.app.live.toml`) er godkendt til
+de tre beskyttede scopes, udgivet og installeret på lalatoto.dk med tilpasset
+distribution. Base44 peger på lalatoto.dk og den nye app, og dashboardet
+(`admin-app/live/`) viser butikkens forudbestillinger. Adgangen kommer fra
+token exchange og ligger i entiteten `ShopAccess`. Punkt 1–3 er gjort.
+
 Deploy køres med appens egen nøgle i `SHOPIFY_APP_AUTOMATION_TOKEN`
 (miljøet har den som `SHOPIFY_LIVE_APP_AUTOMATION_TOKEN`).
+
+**Beslutning (Nicolaj 2026-10-18):** Essential Preorder bliver på det
+nuværende tema, indtil den nye webshop (`Lalatoto-web`, grenen `dev`) er
+lanceret. Punkt 4 og 5 — knappen i kundekontoen og blokken på produktsiden —
+sættes op i det nye tema til lanceringen, ikke før. Ordrer lagt med Essential
+Preorder vises allerede i dashboardet, og «Træk» trækker rigtige penge.
 
 1. **Ny app med eget Client ID** i Dev Dashboard, tilpasset distribution til
    lalatoto.dk. Søg `read_all_orders`, abonnements-API'et og

@@ -174,7 +174,8 @@ bruges kun, når ordren ikke er en forudbestilling.
   forudbestilling. Metafeltet var tomt i mailen; «Skal betales 24/10/2026»
   fra betalingsaftalen virkede.
 
+- 2026-10-18, felt-post, #1006 gensendt: «Restbeløbet trækkes 24. oktober
+  2026 kl. 9» i blokken og «Bliver trukket 24. oktober 2026» ved totalen.
+
 ## Ikke afprøvet endnu
 
-- Ordrebekræftelsen med datoen fra betalingsaftalen. 2026-10-18 viste #1006
-  blokken korrekt, men uden dato, fordi den dengang læste metafeltet.

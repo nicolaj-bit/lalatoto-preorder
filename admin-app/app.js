@@ -1,7 +1,7 @@
 // Dashboardet inde i Shopify admin. Bygges med Polaris' web components, så
 // det ligner resten af admin. Data kommer fra Base44 (adminPreorders).
 import {
-  STATUS_TONE, callAdmin, filterRows, formatDate, formatMoney, orderLink, segmentLink, segmentQuery, totals, variantStats,
+  OUTCOME_TEXT, STATUS_TONE, callAdmin, chargeSummary, chargeableForProduct, filterRows, isChargeable, formatDate, formatMoney, orderLink, segmentLink, segmentQuery, totals, variantStats,
 } from './dashboard.js';
 
 const $ = (id) => document.getElementById(id);
@@ -65,7 +65,9 @@ function row(r) {
           h('s-text', {}, `Forsøg ${r.lastAttempt.attempt}: ${r.lastAttempt.status}`),
           h('s-text', { color: 'subdued' }, formatDate(r.lastAttempt.createdAt)),
           r.lastAttempt.message && h('s-text', { tone: 'critical' }, r.lastAttempt.message))
-        : '–'));
+        : '–'),
+    h('s-table-cell', {},
+      isChargeable(r) && h('s-button', { 'data-charge-order': r.orderId }, 'Træk')));
 }
 
 function shareBar(part, whole) {
@@ -113,7 +115,10 @@ function renderVariants() {
       h('s-table-cell', {}, ''),
       h('s-table-cell', {}, h('s-text', { type: 'strong' }, formatMoney(p.total, currency))),
       h('s-table-cell', {},
-        p.productId && h('s-button', { variant: 'tertiary', 'data-product': p.productId }, 'Opret segment'))));
+        h('s-stack', { direction: 'inline', gap: 'small-200' },
+          p.productId && chargeableForProduct(rows, p.productId).length > 0 &&
+            h('s-button', { 'data-charge-product': p.productId }, 'Træk alle'),
+          p.productId && h('s-button', { variant: 'tertiary', 'data-product': p.productId }, 'Opret segment')))));
     if (p.variants.length > 1 || p.variants[0]?.title) {
       for (const v of p.variants) {
         out.push(h('s-table-row', {},
@@ -131,6 +136,10 @@ function renderVariants() {
   $('variant-rows').replaceChildren(
     ...(out.length > 0 ? out : [h('s-table-row', {}, h('s-table-cell', {}, 'Ingen forudbestillinger endnu'))]),
   );
+  for (const btn of $('variant-rows').querySelectorAll('s-button[data-charge-product]')) {
+    const product = stats.find((p) => p.productId === btn.dataset.chargeProduct);
+    btn.addEventListener('click', () => askCharge(chargeableForProduct(rows, product.productId), product.title));
+  }
   for (const btn of $('variant-rows').querySelectorAll('s-button[data-product]')) {
     const product = stats.find((p) => p.productId === btn.dataset.product);
     btn.addEventListener('click', () => createSegment(product, btn));
@@ -148,6 +157,12 @@ function renderVariants() {
 
 function renderRows() {
   const shown = filterRows(rows, $('search').value, $('status').value, $('product').value);
+  queueMicrotask(() => {
+    for (const btn of $('rows').querySelectorAll('s-button[data-charge-order]')) {
+      const row = rows.find((r) => r.orderId === btn.dataset.chargeOrder);
+      btn.addEventListener('click', () => askCharge([row], row.orderNumber));
+    }
+  });
   $('rows').replaceChildren(
     ...(shown.length > 0
       ? shown.map(row)
@@ -175,28 +190,46 @@ async function load() {
   }
 }
 
-async function preview() {
-  const section = $('preview-section');
-  const list = $('preview-list');
-  section.hidden = false;
-  list.replaceChildren(h('s-text', { color: 'subdued' }, 'Henter …'));
-  $('preview').setAttribute('loading', '');
+let pendingCharge = [];
+
+/** Viser bekræftelsen: hvor mange ordrer og hvor meget, der trækkes. */
+function askCharge(selected, label) {
+  pendingCharge = selected;
+  const { count, amount, currency } = chargeSummary(selected);
+  $('charge-modal-body').replaceChildren(
+    h('s-paragraph', {},
+      count === 1
+        ? `Restbeløbet på ${label} trækkes nu på kundens kort: ${formatMoney(amount, currency)}`
+        : `Restbeløbet på ${count} forudbestillinger af ${label} trækkes nu på kundernes kort: i alt ${formatMoney(amount, currency)}`),
+    h('s-paragraph', { color: 'subdued' }, 'Gør det først, når varen er klar til at blive sendt. Et træk kan ikke fortrydes her — det skal refunderes i ordren.'),
+  );
+  $('charge-modal').showOverlay();
+}
+
+async function confirmCharge() {
+  const selected = pendingCharge;
+  if (selected.length === 0) return;
+  const button = $('charge-confirm');
+  button.setAttribute('loading', '');
   try {
-    const { results } = await callAdmin('chargePreview', idToken);
-    list.replaceChildren(
-      ...(results.length === 0
-        ? [h('s-text', {}, 'Ingen forfaldne forudbestillinger.')]
-        : results.map((r) => h('s-text', {}, h('s-text', { type: 'strong' }, r.orderName ?? r.orderId), ` — ${r.detail}`))),
-    );
+    const { results } = await callAdmin('charge', idToken, { orderIds: selected.map((r) => r.orderId) });
+    $('charge-modal').hideOverlay();
+    const charged = results.filter((r) => r.outcome === 'charged').length;
+    window.shopify.toast.show(`${charged} af ${results.length} trukket`, { isError: charged < results.length });
+    $('result-list').replaceChildren(...results.map((r) =>
+      h('s-text', {}, h('s-text', { type: 'strong' }, r.orderName ?? r.orderId), ` — ${OUTCOME_TEXT[r.outcome] ?? r.outcome}: ${r.detail}`)));
+    $('result-section').hidden = false;
+    await load();
   } catch (error) {
-    list.replaceChildren(h('s-text', { tone: 'critical' }, error.message));
+    window.shopify.toast.show(`Kunne ikke trække: ${error.message}`, { isError: true });
   } finally {
-    $('preview').removeAttribute('loading');
+    button.removeAttribute('loading');
+    pendingCharge = [];
   }
 }
 
 $('refresh').addEventListener('click', load);
-$('preview').addEventListener('click', preview);
+$('charge-confirm').addEventListener('click', confirmCharge);
 $('search').addEventListener('input', renderRows);
 $('status').addEventListener('change', renderRows);
 $('product').addEventListener('change', renderRows);

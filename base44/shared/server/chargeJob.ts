@@ -1,5 +1,6 @@
-// Det daglige træk af restbeløb (Base44-funktionen chargeDuePreorders, kørt af
-// et planlagt workflow).
+// Træk af restbeløb. Butikken trækker selv fra dashboardet (chargeOrders, via
+// adminPreorders), når varen er kommet hjem. Den planlagte kørsel
+// (runChargeJob / chargeDuePreorders) er slået fra, men koden er her stadig.
 //
 // For hver forudbestilling med en forfalden, ubetalt betalingsplan:
 //   1. er et tidligere forsøg stadig i gang, spørges Shopify om status,
@@ -17,7 +18,7 @@ import {
   ORDER_QUERY,
   SELLING_PLAN_CATEGORIES,
 } from "../preorder/operations.ts";
-import { PREORDER_CANDIDATES_QUERY } from "./queries.ts";
+import { FULFILLMENT_ORDER_OPEN, PREORDER_CANDIDATES_QUERY, SCHEDULED_FULFILLMENT_ORDERS_QUERY } from "./queries.ts";
 
 export const MAX_ATTEMPTS = 3;
 /** Mindst så længe mellem to forsøg på samme betalingsplan. */
@@ -103,94 +104,135 @@ async function pollStatus(graphql: Graphql, orderId: string, paymentReferenceId:
   return status as { status: string; errorMessage?: string | null } | null;
 }
 
-export async function runChargeJob(deps: {
+type ChargeDeps = {
   graphql: Graphql;
   store: AttemptStore;
   now?: Date;
   dryRun?: boolean;
   /** Ventetid mellem statuskald. 0 i tests. */
   pollWaitMs?: number;
-}): Promise<JobResult[]> {
+};
+
+/**
+ * Trækker restbeløbet på én ordre. `manual` er butikkens knap i dashboardet:
+ * så trækkes der, selv om forfaldsdatoen ikke er nået, og et afvist forsøg kan
+ * prøves igen med det samme.
+ */
+async function chargeCandidate(deps: ChargeDeps, candidate: Candidate, opts: { manual: boolean }): Promise<JobResult> {
   const now = deps.now ?? new Date();
   const waitMs = deps.pollWaitMs ?? 1500;
-  const results: JobResult[] = [];
-
-  for (const candidate of await findDueCandidates(deps.graphql, now)) {
-    const base = { orderId: candidate.id, orderName: candidate.name };
-    try {
-      if (!(await isPreorder(deps.graphql, candidate))) {
-        results.push({ ...base, outcome: "skipped", detail: "Ikke en forudbestilling" });
-        continue;
-      }
-      const { order } = await deps.graphql<any>(ORDER_QUERY, { id: candidate.id });
-      const firstDecision = decideCharge(order, { now });
-      if (!firstDecision.ok) {
-        results.push({ ...base, outcome: "skipped", detail: firstDecision.message });
-        continue;
-      }
-      const scheduleId = firstDecision.input.paymentScheduleId;
-      const last = await deps.store.last(candidate.id, scheduleId);
-
-      // Et tidligere forsøg er stadig i gang: spørg Shopify, træk ikke igen.
-      if (last && IN_PROGRESS.has(last.status) && last.paymentReferenceId) {
-        const status = await pollStatus(deps.graphql, candidate.id, last.paymentReferenceId, 0, 1);
-        if (status) await deps.store.update(last.id, { status: status.status, message: status.errorMessage ?? null });
-        results.push({ ...base, outcome: "pending", detail: `Forsøg ${last.attempt} har status ${status?.status ?? "ukendt"}` });
-        continue;
-      }
-      if (last && SUCCEEDED.has(last.status)) {
-        results.push({ ...base, outcome: "skipped", detail: `Forsøg ${last.attempt} lykkedes allerede` });
-        continue;
-      }
-      const attempt = last ? last.attempt + 1 : 1;
-      if (last && attempt > MAX_ATTEMPTS) {
-        results.push({ ...base, outcome: "needs_manual", detail: `${MAX_ATTEMPTS} forsøg afvist — træk manuelt eller kontakt kunden` });
-        continue;
-      }
-      if (last && now.getTime() - new Date(last.createdAt).getTime() < RETRY_AFTER_HOURS * 3_600_000) {
-        results.push({ ...base, outcome: "skipped", detail: `Forsøg ${last.attempt} blev afvist for nylig; prøver igen senere` });
-        continue;
-      }
-
-      const decision = decideCharge(order, { now, attempt });
-      if (!decision.ok) {
-        results.push({ ...base, outcome: "skipped", detail: decision.message });
-        continue;
-      }
-      if (deps.dryRun) {
-        results.push({ ...base, outcome: "dry_run", detail: `Ville trække ${decision.expectedAmount.amount} ${decision.expectedAmount.currencyCode} (forsøg ${attempt})` });
-        continue;
-      }
-
-      const res = await deps.graphql<any>(ORDER_CREATE_MANDATE_PAYMENT, decision.input);
-      const payload = res.orderCreateMandatePayment;
-      if (payload.userErrors.length > 0 || !payload.paymentReferenceId) {
-        const message = payload.userErrors.map((e: any) => e.message).join("; ") || "Intet paymentReferenceId";
-        await deps.store.add({ ...base, scheduleId, attempt, status: "ERROR", message, createdAt: now.toISOString() });
-        results.push({ ...base, outcome: "failed", detail: message });
-        continue;
-      }
-      // Gem forsøget, før der ventes på status, så et nyt kørsel ikke trækker igen.
-      await deps.store.add({
-        ...base,
-        scheduleId,
-        attempt,
-        status: "INITIATED",
-        paymentReferenceId: payload.paymentReferenceId,
-        createdAt: now.toISOString(),
-      });
-      const saved = await deps.store.last(candidate.id, scheduleId);
-      const status = await pollStatus(deps.graphql, candidate.id, payload.paymentReferenceId, waitMs, 8);
-      if (saved && status) await deps.store.update(saved.id, { status: status.status, message: status.errorMessage ?? null });
-      const outcome = status && SUCCEEDED.has(status.status) ? "charged" : status && IN_PROGRESS.has(status.status) ? "pending" : "failed";
-      results.push({
-        ...base,
-        outcome,
-        detail: `${decision.expectedAmount.amount} ${decision.expectedAmount.currencyCode}: ${status?.status ?? "ukendt"}${status?.errorMessage ? ` (${status.errorMessage})` : ""}`,
-      });
-    } catch (error) {
-      results.push({ ...base, outcome: "failed", detail: (error as Error).message });
+  const base = { orderId: candidate.id, orderName: candidate.name };
+  try {
+    if (!(await isPreorder(deps.graphql, candidate))) {
+      return { ...base, outcome: "skipped", detail: "Ikke en forudbestilling" };
     }
+    const { order } = await deps.graphql<any>(ORDER_QUERY, { id: candidate.id });
+    const firstDecision = decideCharge(order, { now, force: opts.manual });
+    if (!firstDecision.ok) {
+      return { ...base, outcome: "skipped", detail: firstDecision.message };
+    }
+    const scheduleId = firstDecision.input.paymentScheduleId;
+    const last = await deps.store.last(candidate.id, scheduleId);
+
+    // Et tidligere forsøg er stadig i gang: spørg Shopify, træk ikke igen.
+    if (last && IN_PROGRESS.has(last.status) && last.paymentReferenceId) {
+      const status = await pollStatus(deps.graphql, candidate.id, last.paymentReferenceId, 0, 1);
+      if (status) await deps.store.update(last.id, { status: status.status, message: status.errorMessage ?? null });
+      return { ...base, outcome: "pending", detail: `Forsøg ${last.attempt} har status ${status?.status ?? "ukendt"}` };
+    }
+    if (last && SUCCEEDED.has(last.status)) {
+      return { ...base, outcome: "skipped", detail: `Forsøg ${last.attempt} lykkedes allerede` };
+    }
+    const attempt = last ? last.attempt + 1 : 1;
+    if (last && attempt > MAX_ATTEMPTS) {
+      return { ...base, outcome: "needs_manual", detail: `${MAX_ATTEMPTS} forsøg afvist — træk manuelt eller kontakt kunden` };
+    }
+    // Den planlagte kørsel venter mellem forsøg; trykker butikken selv, prøves der med det samme.
+    if (!opts.manual && last && now.getTime() - new Date(last.createdAt).getTime() < RETRY_AFTER_HOURS * 3_600_000) {
+      return { ...base, outcome: "skipped", detail: `Forsøg ${last.attempt} blev afvist for nylig; prøver igen senere` };
+    }
+
+    const decision = decideCharge(order, { now, attempt, force: opts.manual });
+    if (!decision.ok) {
+      return { ...base, outcome: "skipped", detail: decision.message };
+    }
+    if (deps.dryRun) {
+      return { ...base, outcome: "dry_run", detail: `Ville trække ${decision.expectedAmount.amount} ${decision.expectedAmount.currencyCode} (forsøg ${attempt})` };
+    }
+
+    const res = await deps.graphql<any>(ORDER_CREATE_MANDATE_PAYMENT, decision.input);
+    const payload = res.orderCreateMandatePayment;
+    if (payload.userErrors.length > 0 || !payload.paymentReferenceId) {
+      const message = payload.userErrors.map((e: any) => e.message).join("; ") || "Intet paymentReferenceId";
+      await deps.store.add({ ...base, scheduleId, attempt, status: "ERROR", message, createdAt: now.toISOString() });
+      return { ...base, outcome: "failed", detail: message };
+    }
+    // Gem forsøget, før der ventes på status, så et nyt kørsel ikke trækker igen.
+    await deps.store.add({
+      ...base,
+      scheduleId,
+      attempt,
+      status: "INITIATED",
+      paymentReferenceId: payload.paymentReferenceId,
+      createdAt: now.toISOString(),
+    });
+    const saved = await deps.store.last(candidate.id, scheduleId);
+    const status = await pollStatus(deps.graphql, candidate.id, payload.paymentReferenceId, waitMs, 8);
+    if (saved && status) await deps.store.update(saved.id, { status: status.status, message: status.errorMessage ?? null });
+    const outcome = status && SUCCEEDED.has(status.status) ? "charged" : status && IN_PROGRESS.has(status.status) ? "pending" : "failed";
+    return {
+      ...base,
+      outcome,
+      detail: `${decision.expectedAmount.amount} ${decision.expectedAmount.currencyCode}: ${status?.status ?? "ukendt"}${status?.errorMessage ? ` (${status.errorMessage})` : ""}`,
+    };
+  } catch (error) {
+    return { ...base, outcome: "failed", detail: (error as Error).message };
+  }
+}
+
+/** Den planlagte kørsel: alle forfaldne forudbestillinger. Slået fra i Base44 — se README. */
+export async function runChargeJob(deps: ChargeDeps): Promise<JobResult[]> {
+  const now = deps.now ?? new Date();
+  const results: JobResult[] = [];
+  for (const candidate of await findDueCandidates(deps.graphql, now)) {
+    results.push(await chargeCandidate({ ...deps, now }, candidate, { manual: false }));
   }
   return results;
+}
+
+/** Butikkens knap «Træk restbeløb»: de valgte ordrer, en ad gangen. */
+export async function chargeOrders(deps: ChargeDeps, orderIds: string[]): Promise<JobResult[]> {
+  const now = deps.now ?? new Date();
+  const results: JobResult[] = [];
+  for (const id of [...new Set(orderIds)]) {
+    const { order } = await deps.graphql<any>(ORDER_QUERY, { id });
+    if (!order) {
+      results.push({ orderId: id, outcome: "failed", detail: "Ordren findes ikke" });
+      continue;
+    }
+    const result = await chargeCandidate({ ...deps, now }, order as Candidate, { manual: true });
+    if (result.outcome === "charged") result.detail += await openScheduledFulfillments(deps.graphql, id);
+    results.push(result);
+  }
+  return results;
+}
+
+/**
+ * Forsendelsen er planlagt til forfaldsdatoen og kan ikke sendes før.
+ * Trækker butikken tidligere, fordi varen er kommet, åbnes den, så ordren kan
+ * sendes med det samme (også fra fragtmodulet). Svarer med en tekst til resultatet.
+ */
+export async function openScheduledFulfillments(graphql: Graphql, orderId: string): Promise<string> {
+  try {
+    const data: any = await graphql(SCHEDULED_FULFILLMENT_ORDERS_QUERY, { id: orderId });
+    const scheduled = (data.order?.fulfillmentOrders.nodes ?? []).filter((f: any) => f.status === "SCHEDULED");
+    for (const fo of scheduled) {
+      const res: any = await graphql(FULFILLMENT_ORDER_OPEN, { id: fo.id });
+      const errors = res.fulfillmentOrderOpen.userErrors;
+      if (errors.length > 0) return ` — forsendelsen kunne ikke åbnes: ${errors.map((e: any) => e.message).join("; ")}`;
+    }
+    return scheduled.length > 0 ? " — klar til afsendelse" : "";
+  } catch (error) {
+    return ` — forsendelsen kunne ikke åbnes: ${(error as Error).message}`;
+  }
 }

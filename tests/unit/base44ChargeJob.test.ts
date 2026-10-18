@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { runChargeJob, type AttemptStore, type ChargeAttempt } from "../../base44/shared/server/chargeJob.ts";
+import { chargeOrders, runChargeJob, type AttemptStore, type ChargeAttempt } from "../../base44/shared/server/chargeJob.ts";
 import type { Graphql } from "../../app/lib/preorder/cancelService";
 
 const ORDER = "gid://shopify/Order/1001";
@@ -12,6 +12,7 @@ function fullOrder(overrides: Record<string, unknown> = {}) {
     id: ORDER,
     name: "#1001",
     cancelledAt: null,
+    lineItems: { nodes: [{ sellingPlan: { sellingPlanId: PLAN } }] },
     totalOutstandingSet: { shopMoney: { amount: "548.0", currencyCode: "DKK" } },
     paymentTerms: {
       id: "gid://shopify/PaymentTerms/1",
@@ -58,6 +59,10 @@ function fakeShopify(opts: { category?: string | null; paymentStatus?: string; m
             userErrors: (opts.mutationErrors ?? []).map((message) => ({ message })),
           },
         } as any;
+      case "PlanlagteForsendelser":
+        return { order: { fulfillmentOrders: { nodes: [{ id: "gid://shopify/FulfillmentOrder/9", status: "SCHEDULED" }, { id: "x", status: "CLOSED" }] } } } as any;
+      case "AabnForsendelse":
+        return { fulfillmentOrderOpen: { fulfillmentOrder: { id: variables?.id, status: "OPEN" }, userErrors: [] } } as any;
       case "Betalingsstatus":
         return { orderPaymentStatus: { status: opts.paymentStatus ?? "PURCHASED", errorMessage: null } } as any;
       default:
@@ -162,5 +167,33 @@ describe("runChargeJob", () => {
       ],
     });
     expect(await run(s, memoryStore())).toEqual([]);
+  });
+});
+
+describe("chargeOrders (knappen i dashboardet)", () => {
+  // En uge før forfald: knappen må trække alligevel.
+  const beforeDue = new Date("2026-11-05T10:00:00Z");
+
+  it("trækker før forfaldsdatoen og åbner den planlagte forsendelse", async () => {
+    const s = fakeShopify();
+    const m = memoryStore();
+    const results = await chargeOrders({ graphql: s.graphql, store: m.store, now: beforeDue, pollWaitMs: 0 }, [ORDER, ORDER]);
+    expect(results).toEqual([{ orderId: ORDER, orderName: "#1001", outcome: "charged", detail: "548.00 DKK: PURCHASED — klar til afsendelse" }]);
+    expect(s.calls.filter((c) => c.name === "AabnForsendelse").map((c) => c.variables.id)).toEqual(["gid://shopify/FulfillmentOrder/9"]);
+  });
+
+  it("prøver igen med det samme efter et afvist forsøg", async () => {
+    const s = fakeShopify();
+    const m = memoryStore([{ id: "r1", orderId: ORDER, scheduleId: SCHEDULE, attempt: 1, status: "FAILED", createdAt: beforeDue.toISOString() }]);
+    const [r] = await chargeOrders({ graphql: s.graphql, store: m.store, now: beforeDue, pollWaitMs: 0 }, [ORDER]);
+    expect(r.outcome).toBe("charged");
+    expect(s.calls.find((c) => c.name === "TraekRestbeloeb")?.variables.idempotencyKey).toBe("po-1001-88-2");
+  });
+
+  it("trækker ikke to gange", async () => {
+    const s = fakeShopify();
+    const m = memoryStore([{ id: "r1", orderId: ORDER, scheduleId: SCHEDULE, attempt: 1, status: "PURCHASED", createdAt: beforeDue.toISOString() }]);
+    expect(await chargeOrders({ graphql: s.graphql, store: m.store, now: beforeDue, pollWaitMs: 0 }, [ORDER])).toMatchObject([{ outcome: "skipped" }]);
+    expect(s.calls.some((c) => c.name === "TraekRestbeloeb")).toBe(false);
   });
 });

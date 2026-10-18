@@ -3,13 +3,14 @@
 //
 //   POST { action: "list" | "chargePreview" }
 //   POST { action: "createSegment", productId, productTitle }
+//   POST { action: "charge", orderIds: [...] }   træk restbeløbet nu
 //   Authorization: Bearer <ID token fra App Bridge>
 //
 // Base44-siden må ikke vises inde i Shopify (den sender X-Frame-Options:
 // DENY), så dashboardet i admin er en selvstændig side. Den har intet
 // Base44-login; den, der har appen åben i butikkens admin, godkendes med
-// App Bridges ID token. Prøvekørslen af trækket trækker ingen penge; det
-// eneste, funktionen opretter, er et kundesegment pr. produkt.
+// App Bridges ID token. «charge» trækker restbeløbet på de valgte ordrer —
+// det er butikkens egen knap, der trækkes ikke noget automatisk.
 
 import type { PreorderRow } from "./dashboard.ts";
 import type { JobResult } from "./chargeJob.ts";
@@ -32,6 +33,10 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
+const ORDER_GID = /^gid:\/\/shopify\/Order\/\d+$/;
+/** Hvor mange ordrer et tryk på «Træk alle» højst må trække på én gang. */
+const MAX_CHARGE = 100;
+
 export async function handleAdminRequest(
   req: Request,
   deps: {
@@ -39,6 +44,7 @@ export async function handleAdminRequest(
     listRows: () => Promise<PreorderRow[]>;
     chargePreview: () => Promise<JobResult[]>;
     createSegment: (productId: string, productTitle: string) => Promise<SegmentResult>;
+    charge: (orderIds: string[]) => Promise<JobResult[]>;
     now?: Date;
   },
 ): Promise<Response> {
@@ -55,7 +61,7 @@ export async function handleAdminRequest(
   if (!verified.ok) return json({ ok: false, error: "Ingen adgang" }, 401);
 
   const body = (await req.json().catch(() => null)) as
-    | { action?: unknown; productId?: unknown; productTitle?: unknown }
+    | { action?: unknown; productId?: unknown; productTitle?: unknown; orderIds?: unknown }
     | null;
   if (body?.action === "list") return json({ ok: true, rows: await deps.listRows() });
   if (body?.action === "chargePreview") return json({ ok: true, results: await deps.chargePreview() });
@@ -65,6 +71,13 @@ export async function handleAdminRequest(
     }
     const result = await deps.createSegment(body.productId, body.productTitle);
     return json(result, result.ok ? 200 : 422);
+  }
+  if (body?.action === "charge") {
+    const ids = Array.isArray(body.orderIds) ? body.orderIds : [];
+    if (ids.length === 0 || ids.length > MAX_CHARGE || !ids.every((id) => typeof id === "string" && ORDER_GID.test(id))) {
+      return json({ ok: false, error: "Ugyldige ordrer" }, 400);
+    }
+    return json({ ok: true, results: await deps.charge(ids as string[]) });
   }
   return json({ ok: false, error: "Ukendt handling" }, 400);
 }

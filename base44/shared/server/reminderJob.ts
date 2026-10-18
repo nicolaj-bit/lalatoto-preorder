@@ -1,4 +1,4 @@
-// Påmindelse til admin før forfald (Base44-funktionen remindUpcomingPreorders,
+// Påmindelse til admin før den forventede dato (Base44-funktionen remindUpcomingPreorders,
 // kørt dagligt af et planlagt workflow).
 //
 // Finder de forudbestillinger, hvis restbeløb forfalder om REMINDER_DAYS_AHEAD
@@ -48,11 +48,11 @@ export function reminderEmail(rows: PreorderRow[], days: number): ReminderEmail 
     })
     .join("");
   const body = [
-    `<p>Om ${days} dage, ${escapeHtml(dueText)} kl. 9, trækker appen restbeløbet på ${
+    `<p>Om ${days} dage, ${escapeHtml(dueText)}, er den forventede dato for ${
       rows.length === 1 ? "denne forudbestilling" : `disse ${rows.length} forudbestillinger`
-    }, i alt ${total} ${escapeHtml(currency)}:</p>`,
+    }. Restbeløbet er i alt ${total} ${escapeHtml(currency)}:</p>`,
     `<ul>${items}</ul>`,
-    `<p>Er leveringen forsinket, så ret datoen i blokken «Forudbestilling» på produktet i Shopify admin, før den dag.</p>`,
+    `<p>Restbeløbet trækkes ikke af sig selv. Når varen er kommet hjem, så tryk «Træk alle» ved produktet i appen Lalatoto Forudbestilling i Shopify admin. Er leveringen forsinket, så ret datoen i blokken «Forudbestilling» på produktet, så kunderne får besked.</p>`,
   ].join("");
   return { subject, body };
 }

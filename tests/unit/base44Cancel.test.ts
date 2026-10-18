@@ -26,7 +26,13 @@ function fakeShopify() {
         },
       } as any;
     }
-    if (name === "PlanKategorier") return { nodes: [{ id: PLAN, category: "PRE_ORDER" }] } as any;
+    if (name === "AppensForudbestillingsplaner") {
+      return {
+        sellingPlanGroups: {
+          nodes: [{ appId: "lalatoto-preorder", merchantCode: "lalatoto-preorder-1", sellingPlans: { nodes: [{ id: PLAN, category: "PRE_ORDER" }] } }],
+        },
+      } as any;
+    }
     if (name === "AnnullerOrdre") return { orderCancel: { job: { id: "j", done: false }, orderCancelUserErrors: [] } } as any;
     throw new Error(name);
   };

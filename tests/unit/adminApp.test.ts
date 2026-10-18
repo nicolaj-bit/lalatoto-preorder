@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { handleAdminRequest } from "../../base44/shared/server/adminHandler.ts";
 import { verifyAdminIdToken } from "../../base44/shared/server/sessionToken.ts";
 import { createProductSegment } from "../../base44/shared/server/segment.ts";
@@ -185,5 +186,31 @@ describe("createProductSegment", () => {
 
   it("afviser andet end et produkt-id", async () => {
     expect(await createProductSegment((async () => ({})) as any, "gid://shopify/Order/1", "X")).toEqual({ ok: false, error: "Ugyldigt produkt" });
+  });
+});
+
+describe("admin-app/live/index.html", () => {
+  // Produktionsappen har sin egen side, fordi App Bridge kun kender ét Client
+  // ID pr. side. Bortset fra Client ID'et og stien til app.js skal den være
+  // magen til testappens side.
+  const read = (p: string) => readFileSync(new URL(`../../${p}`, import.meta.url), "utf8");
+  const clientId = (toml: string) => /^client_id = "([^"]+)"/m.exec(read(toml))![1];
+  const apiKey = (html: string) => /name="shopify-api-key" content="([^"]+)"/.exec(html)![1];
+  const normalize = (html: string) =>
+    html
+      .replace(/<!--[^]*?-->\s*<meta name="shopify-api-key"[^>]*>/, "")
+      .replace('src="../app.js"', 'src="./app.js"');
+
+  it("bruger hver sin apps Client ID", () => {
+    expect(apiKey(read("admin-app/index.html"))).toBe(clientId("shopify.app.toml"));
+    expect(apiKey(read("admin-app/live/index.html"))).toBe(clientId("shopify.app.live.toml"));
+  });
+
+  it("er ellers magen til testappens side", () => {
+    expect(normalize(read("admin-app/live/index.html"))).toBe(normalize(read("admin-app/index.html")));
+  });
+
+  it("produktionsappen åbner live/", () => {
+    expect(read("shopify.app.live.toml")).toMatch(/^application_url = "https:\/\/[^"]+\/live\/"$/m);
   });
 });

@@ -30,10 +30,11 @@ export function orderLink(orderId) {
   return `shopify://admin/orders/${String(orderId).split('/').pop()}`;
 }
 
-export function filterRows(rows, search, status) {
+export function filterRows(rows, search, status, productId) {
   const q = (search ?? '').trim().toLowerCase();
   return rows.filter((r) => {
     if (status && status !== 'alle' && r.status !== status) return false;
+    if (!rowHasProduct(r, productId)) return false;
     if (!q) return true;
     return [r.orderNumber, r.customer.name, r.customer.email, r.customer.phone, ...r.items]
       .filter(Boolean)
@@ -70,4 +71,50 @@ export async function callAdmin(action, getToken, fetchImpl = fetch) {
   const body = await res.json().catch(() => null);
   if (!body?.ok) throw new Error(body?.error ?? `HTTP ${res.status}`);
   return body;
+}
+
+/**
+ * Salg pr. produkt og variant ud fra forudbestillingslinjerne. Annullerede
+ * ordrer tæller ikke med. Sorteret efter flest solgte stk.
+ */
+export function variantStats(rows) {
+  const products = new Map();
+  for (const r of rows) {
+    if (r.status === 'annulleret') continue;
+    for (const l of r.lines ?? []) {
+      if (!l.quantity) continue;
+      const pKey = l.productId ?? l.productTitle;
+      let p = products.get(pKey);
+      if (!p) {
+        p = { productId: l.productId, title: l.productTitle, imageUrl: l.imageUrl, orders: new Set(), units: 0, total: 0, variants: new Map() };
+        products.set(pKey, p);
+      }
+      const vKey = l.variantId ?? l.variantTitle ?? pKey;
+      let v = p.variants.get(vKey);
+      if (!v) {
+        v = { variantId: l.variantId, title: l.variantTitle, imageUrl: l.imageUrl, orders: new Set(), units: 0, total: 0 };
+        p.variants.set(vKey, v);
+      }
+      for (const x of [p, v]) {
+        x.orders.add(r.orderId);
+        x.units += l.quantity;
+        x.total += Number(l.total);
+      }
+      p.imageUrl ??= l.imageUrl;
+    }
+  }
+  const finish = (x) => ({ ...x, orders: x.orders.size, total: Math.round(x.total * 100) / 100 });
+  const byUnits = (a, b) => b.units - a.units || b.total - a.total;
+  return [...products.values()]
+    .map((p) => ({ ...finish(p), variants: [...p.variants.values()].map(finish).sort(byUnits) }))
+    .sort(byUnits);
+}
+
+/** Shopifys segmentforespørgsel for kunder, der har købt produktet. */
+export function segmentQuery(productId) {
+  return `products_purchased(id: ${String(productId).split('/').pop()}) = true`;
+}
+
+export function rowHasProduct(row, productId) {
+  return !productId || productId === 'alle' || (row.lines ?? []).some((l) => l.productId === productId);
 }

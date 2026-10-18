@@ -36,7 +36,18 @@ export const DASHBOARD_ORDERS_QUERY = /* GraphQL */ `
         totalOutstandingSet { shopMoney { amount currencyCode } }
         customer { id displayName email phone }
         shippingAddress { name address1 address2 zip city country phone }
-        lineItems(first: 20) { nodes { title quantity sellingPlan { sellingPlanId name } } }
+        lineItems(first: 20) {
+          nodes {
+            title
+            quantity
+            currentQuantity
+            sellingPlan { sellingPlanId name }
+            product { id title }
+            variant { id title image { url(transform: { maxWidth: 120 }) } }
+            image { url(transform: { maxWidth: 120 }) }
+            discountedTotalSet { shopMoney { amount } }
+          }
+        }
         paymentTerms { paymentSchedules(first: 5) { nodes { id dueAt completedAt balanceDue { amount currencyCode } } } }
       }
     }

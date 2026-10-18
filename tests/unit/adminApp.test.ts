@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { handleAdminRequest } from "../../base44/shared/server/adminHandler.ts";
 import { verifyAdminIdToken } from "../../base44/shared/server/sessionToken.ts";
-import { callAdmin, ENDPOINT, filterRows, orderLink, totals } from "../../admin-app/dashboard.js";
+import { callAdmin, ENDPOINT, filterRows, orderLink, segmentQuery, totals, variantStats } from "../../admin-app/dashboard.js";
 import { CLIENT_ID, GOOD_PAYLOAD, NOW, SECRET, SHOP, sign } from "../helpers/jwt";
 
 const env = { store: SHOP, clientId: CLIENT_ID, clientSecret: SECRET };
@@ -97,5 +97,34 @@ describe("admin-app/dashboard.js", () => {
     };
     await expect(callAdmin("list", async () => "tok", fakeFetch)).rejects.toThrow("Ingen adgang");
     expect(seen[0]).toEqual({ url: ENDPOINT, auth: "Bearer tok", body: JSON.stringify({ action: "list" }) });
+  });
+});
+
+describe("variantStats", () => {
+  const P = "gid://shopify/Product/11";
+  const line = (variantId: string, variantTitle: string, quantity: number, total: string) =>
+    ({ productId: P, productTitle: "Luksus sengeslange", variantId, variantTitle, quantity, total, imageUrl: null });
+  const rows = [
+    { orderId: "o1", status: "afventer betaling", lines: [line("v1", "Sunflower", 1, "499.00"), line("v2", "Sage", 2, "998.00")] },
+    { orderId: "o2", status: "betalt", lines: [line("v2", "Sage", 1, "499.00")] },
+    { orderId: "o3", status: "annulleret", lines: [line("v1", "Sunflower", 5, "2495.00")] },
+  ];
+
+  it("tæller ordrer, stk. og omsætning pr. variant og springer annullerede over", () => {
+    const [p] = variantStats(rows);
+    expect(p).toMatchObject({ productId: P, orders: 2, units: 4, total: 1996 });
+    expect(p.variants.map((v: any) => [v.title, v.orders, v.units, v.total])).toEqual([
+      ["Sage", 2, 3, 1497],
+      ["Sunflower", 1, 1, 499],
+    ]);
+  });
+
+  it("filtrerer ordrelisten på produkt", () => {
+    expect(filterRows([{ ...rows[0], customer: {}, items: [] }], "", "alle", "gid://shopify/Product/99")).toEqual([]);
+    expect(filterRows([{ ...rows[0], customer: {}, items: [] }], "", "alle", P)).toHaveLength(1);
+  });
+
+  it("laver Shopifys segmentforespørgsel med produktets tal-id", () => {
+    expect(segmentQuery("gid://shopify/Product/11362090942806")).toBe("products_purchased(id: 11362090942806) = true");
   });
 });

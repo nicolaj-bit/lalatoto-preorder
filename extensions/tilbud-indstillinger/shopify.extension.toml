@@ -1,0 +1,15 @@
+# Indstillingssiden for rabatten «Tilbud i procent» i Shopify admin
+# (Rabatter → Opret rabat). Uden den kan rabatten ikke oprettes i admin.
+# Der er intet at indstille: procenten står på hvert produkt i feltet
+# «Tilbud i procent» (lalatoto.tilbud). Siden forklarer det bare.
+api_version = "2026-07"
+
+[[extensions]]
+name = "Tilbud i procent"
+handle = "tilbud-indstillinger"
+uid = "b3517540-1e4a-838b-145e-89a779184b1092e89d02"
+type = "ui_extension"
+
+[[extensions.targeting]]
+module = "./src/Indstillinger.jsx"
+target = "admin.discount-details.function-settings.render"

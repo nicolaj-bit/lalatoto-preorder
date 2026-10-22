@@ -1,0 +1,110 @@
+{%- comment -%}
+  Sprog og land (Lalatoto Forudbestilling). App-indlejring, der slås til under
+  Temaer → Tilpas → App-indlejringer og virker i alle temaer.
+
+  Shopifys automatiske omdirigering ud fra land kræver Shopify Plus. I stedet
+  spørger siden ved det første besøg Shopify, hvilket marked der passer til
+  besøgendes land (browsing_context_suggestions.json):
+
+  - Land med eget marked (fx EU eller Norge): besøgende sendes til den engelske
+    side i den lokale valuta (lalatoto.dk/en-eu, /en-no).
+  - Land uden eget marked (fx USA eller England): kun sproget skiftes til
+    engelsk (lalatoto.dk/en), og priserne står i danske kroner.
+  - Danmark, eller land der ikke kan findes: siden bliver på dansk.
+
+  Det sker kun én gang pr. browser, så et senere valg af land eller sprog
+  bliver stående. Søgemaskiner og temaeditoren sendes ingen steder hen.
+  Skiftet går gennem Shopifys egen /localization-formular.
+{%- endcomment -%}
+
+{%- if request.design_mode == false and request.page_type != 'password' and localization.country.iso_code == block.settings.home_country -%}
+  <script>
+    (function () {
+      var KEY = 'lalatoto-geo-tjekket';
+      try {
+        if (window.localStorage.getItem(KEY)) return;
+        window.localStorage.setItem(KEY, '1');
+      } catch (error) {
+        return;
+      }
+      if (/bot|crawl|spider|slurp|lighthouse|headless/i.test(navigator.userAgent)) return;
+
+      var home = {{ localization.country.iso_code | json }};
+      var locale = {{ request.locale.iso_code | json }};
+      var fallback = {{ block.settings.fallback_language | json }};
+      var root = (window.Shopify && Shopify.routes && Shopify.routes.root) || '/';
+      var url =
+        root +
+        'browsing_context_suggestions.json?country[enabled]=true&country[exclude]=' + home +
+        '&language[enabled]=true&language[exclude]=' + locale;
+
+      fetch(url, { credentials: 'same-origin' })
+        .then(function (response) {
+          return response.ok ? response.json() : null;
+        })
+        .then(function (data) {
+          var detected = data && data.detected_values && data.detected_values.country;
+          var suggestion = data && data.suggestions && data.suggestions[0];
+          var parts = (suggestion && suggestion.parts) || {};
+          var country = parts.country && parts.country.handle;
+          var language = (parts.language && parts.language.handle) || fallback;
+
+          if (!country) {
+            /* Land uden eget marked: kun sproget skiftes. */
+            if (!detected || !detected.handle || detected.handle === home) return;
+            if (locale === fallback) return;
+            country = home;
+            language = fallback;
+          }
+
+          var path = window.location.pathname.replace(new RegExp('^' + root.replace(/\/$/, '')), '') || '/';
+
+          var form = document.createElement('form');
+          form.method = 'post';
+          form.action = '/localization';
+          form.style.display = 'none';
+          [
+            ['form_type', 'localization'],
+            ['utf8', '✓'],
+            ['country_code', country],
+            ['language_code', language],
+            ['return_to', path + window.location.search]
+          ].forEach(function (field) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = field[0];
+            input.value = field[1];
+            form.appendChild(input);
+          });
+          document.body.appendChild(form);
+          form.submit();
+        })
+        .catch(function () {});
+    })();
+  </script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Sprog og land",
+  "target": "body",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Udenlandske besøgende sendes ved første besøg til deres eget marked på engelsk og i deres valuta. Lande uden eget marked får den engelske side i danske kroner."
+    },
+    {
+      "type": "text",
+      "id": "home_country",
+      "label": "Hjemland (landekode)",
+      "default": "DK"
+    },
+    {
+      "type": "text",
+      "id": "fallback_language",
+      "label": "Sprog til udlandet (sprogkode)",
+      "default": "en"
+    }
+  ]
+}
+{% endschema %}

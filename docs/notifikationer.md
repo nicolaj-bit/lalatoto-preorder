@@ -16,6 +16,15 @@ gennem API'et, så de rettes i admin under
 [`skabeloner/ordrebekraeftelse.liquid`](skabeloner/ordrebekraeftelse.liquid).
 Erstat alt i «Rediger kode» med den, og gem.
 
+Den færdige skabelon har også Lalatotos udseende (beige baggrund, Playfair i
+overskrifterne, mørke knapper med små versaler) og en boks om
+forudbestillingen med knappen «Log ind på din konto». Knappen går til
+`{{ shop.url }}/account`; butikken bruger de nye kundekonti, så kunden logger
+ind med en kode på mail. Firmaoplysningerne står nederst.
+
+**Logo:** Mailen viser logoet fra *Indstillinger → Notifikationer →
+Tilpas*. Uden logo står butikkens navn med Playfair.
+
 **Eller selv:** sæt blokken ind lige over oversigten over varerne. Den vises kun, når en
 linje er købt med en forudbestillingsplan (`selling_plan_allocation`).
 Datoen kommer fra ordrens egen betalingsaftale

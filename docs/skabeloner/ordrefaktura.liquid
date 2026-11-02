@@ -14,50 +14,56 @@
 {%- if er_forudbestilling -%}
 <!DOCTYPE html>
 <html lang="da">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
-<body style="margin:0;padding:0;background:#ffffff;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#333333;">
-  <tr><td align="center" style="padding:32px 16px;">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400&display=swap" rel="stylesheet" type="text/css">
+</head>
+<body style="margin:0;padding:0;background:#efebe4;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#efebe4;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#2a2724;">
+  <tr><td align="center" style="padding:40px 16px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
-      <tr><td style="padding-bottom:24px;">
+      <tr><td style="padding-bottom:32px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
           <td>
             {%- if shop.email_logo_url -%}
-              <img src="{{ shop.email_logo_url }}" alt="{{ shop.name }}" style="max-width:180px;">
+              <img src="{{ shop.email_logo_url }}" alt="{{ shop.name }}" width="{{ shop.email_logo_width | default: 180 }}" style="max-width:180px;">
             {%- else -%}
-              <span style="font-size:22px;">{{ shop.name }}</span>
+              <span style="font-family:'Playfair Display',Georgia,'Times New Roman',serif;font-weight:400;font-size:24px;letter-spacing:0.2em;color:#2a2724;">{{ shop.name | upcase }}</span>
             {%- endif -%}
           </td>
-          <td align="right" style="color:#999999;font-size:14px;">Ordre {{ name }}</td>
+          <td align="right" style="color:#6e675e;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;">Ordre {{ name }}</td>
         </tr></table>
       </td></tr>
       <tr><td>
-        <h1 style="font-size:22px;font-weight:normal;margin:0 0 16px;">Ny dato for din forudbestilling</h1>
+        <p style="margin:0 0 8px;color:#6e675e;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;">Forudbestilling</p>
+        <h1 style="font-family:'Playfair Display',Georgia,'Times New Roman',serif;font-weight:400;font-size:30px;line-height:1.2;margin:0 0 16px;color:#2a2724;">Ny dato for din forudbestilling</h1>
         {%- if custom_message != blank -%}
-          <p style="font-size:16px;line-height:1.6;margin:0 0 16px;">{{ custom_message }}</p>
+          <p style="font-size:16px;line-height:1.6;margin:0 0 16px;color:#2a2724;">{{ custom_message }}</p>
         {%- elsif forudbestilling_dato != blank -%}
-          <p style="font-size:16px;line-height:1.6;margin:0 0 16px;">Restbeløbet trækkes {{ forudbestilling_dato }} kl. 9, og varen sendes tidligst samme dag.</p>
+          <p style="font-size:16px;line-height:1.6;margin:0 0 16px;color:#2a2724;">Vi trækker beløbet {{ forudbestilling_dato }} og sender varen tidligst samme dag.</p>
         {%- endif -%}
-        <p style="font-size:16px;line-height:1.6;margin:0 0 24px;">Beløbet trækkes automatisk på det kort, du betalte med. Du skal ikke betale noget nu.</p>
+        <p style="font-size:16px;line-height:1.6;margin:0 0 24px;color:#2a2724;">Beløbet trækkes automatisk på det kort, du betalte med. Du skal ikke betale noget nu.</p>
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+          <td style="background:#2a2724;padding:14px 24px;"><a href="{{ shop.url }}/account" style="color:#efebe4;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;text-decoration:none;">Log ind på din konto</a></td>
+        </tr></table>
+        <p style="margin:12px 0 32px;color:#6e675e;font-size:13px;line-height:1.6;">I din kundekonto kan du følge forudbestillingen og annullere den, indtil varen er sendt. Log ind med {{ email }} – vi sender dig en kode.</p>
       </td></tr>
-      <tr><td style="border-top:1px solid #e5e5e5;padding-top:16px;">
-        <h2 style="font-size:18px;font-weight:normal;margin:0 0 12px;">Din ordre</h2>
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:15px;">
+      <tr><td style="border-top:1px solid #d7d0c4;padding-top:28px;">
+        <h2 style="font-family:'Playfair Display',Georgia,'Times New Roman',serif;font-weight:400;font-size:22px;margin:0 0 16px;color:#2a2724;">Din ordre</h2>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:15px;color:#2a2724;">
           {%- for line in line_items -%}
           <tr>
-            <td style="padding:6px 0;">{{ line.title }} × {{ line.quantity }}</td>
-            <td align="right" style="padding:6px 0;">{{ line.final_line_price | money }}</td>
+            <td style="padding:8px 0;">{{ line.title }} × {{ line.quantity }}</td>
+            <td align="right" style="padding:8px 0;">{{ line.final_line_price | money }}</td>
           </tr>
           {%- endfor -%}
-          <tr><td style="padding:6px 0;color:#777777;">Fragt</td><td align="right" style="padding:6px 0;color:#777777;">{{ shipping_price | money }}</td></tr>
-          <tr><td style="padding:12px 0;border-top:1px solid #e5e5e5;font-weight:bold;">I alt</td><td align="right" style="padding:12px 0;border-top:1px solid #e5e5e5;font-weight:bold;">{{ total_price | money_with_currency }}</td></tr>
+          <tr><td style="padding:8px 0;color:#6e675e;">Fragt</td><td align="right" style="padding:8px 0;color:#6e675e;">{{ shipping_price | money }}</td></tr>
+          <tr><td style="padding:14px 0;border-top:1px solid #d7d0c4;">I alt</td><td align="right" style="padding:14px 0;border-top:1px solid #d7d0c4;font-size:18px;"><strong>{{ total_price | money_with_currency }}</strong></td></tr>
         </table>
       </td></tr>
-      <tr><td style="padding-top:24px;font-size:14px;line-height:1.6;color:#777777;">
-        {%- unless custom_message contains 'annullere' -%}
-          Du kan annullere forudbestillingen i din kundekonto, indtil varen er sendt.
-        {%- endunless %}
-        Har du spørgsmål, så svar på denne mail eller skriv til {{ shop.email }}.
+      <tr><td style="border-top:1px solid #d7d0c4;padding-top:24px;font-size:13px;line-height:1.7;color:#6e675e;">
+        Har du spørgsmål, så svar på denne mail eller skriv til <a href="mailto:{{ shop.email }}" style="color:#2a2724;">{{ shop.email }}</a>.<br><br>
+        LALATOTO of Denmark ApS · CVR 45149218<br>Kulbyvej 16, 4270 Høng
       </td></tr>
     </table>
   </td></tr>
@@ -89,11 +95,39 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta name="viewport" content="width=device-width">
   <link rel="stylesheet" type="text/css" href="/assets/notifications/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400&display=swap" rel="stylesheet" type="text/css">
   <style>
-    .button__cell { background: {{ shop.email_accent_color }}; }
-    .actions-buttons .button__cell--primary { background-color: {{ shop.email_accent_color }}; }
-    .actions-buttons .button__cell--outlined .button__text { color: {{ shop.email_accent_color }}; }
-    a, a:hover, a:active, a:visited { color: {{ shop.email_accent_color }}; }
+    /* Lalatoto: samme udtryk som webshoppen. Beige baggrund, mørk tekst,
+       Playfair i overskrifter (Georgia, hvor mailprogrammet ikke henter
+       skrifter) og den mørke knap med små versaler. */
+    body, .body, .header, .footer, .section, .row { background: #efebe4 !important; }
+    body, td, p, li { color: #2a2724; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+    h1, h2, h3 { color: #2a2724; font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; font-weight: 400; letter-spacing: normal; }
+    h2 { font-size: 30px; line-height: 1.2; }
+    h3 { font-size: 22px; line-height: 1.3; }
+    h4 { color: #2a2724; font-size: 11px; font-weight: 400; letter-spacing: 0.16em; text-transform: uppercase; }
+    p, .customer-info__item p, .order-list__item-variant, .subtotal-line__title { color: #4a453f; }
+    .section__cell { border-top: 1px solid #d7d0c4; }
+    .shop-name__text { color: #2a2724; font-family: 'Playfair Display', Georgia, serif; font-size: 24px; letter-spacing: 0.2em; }
+    .order-number__text { color: #6e675e; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; }
+    .button__cell, .actions-buttons .button__cell--primary { background: #2a2724 !important; border-radius: 0 !important; }
+    .button__text, .actions-buttons .button__cell--primary .button__text { color: #efebe4 !important; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; }
+    .actions-buttons .button__cell--outlined { background: transparent !important; border: 1px solid #2a2724 !important; }
+    .actions-buttons .button__cell--outlined .button__text { color: #2a2724 !important; }
+    a, a:hover, a:active, a:visited { color: #2a2724; }
+    .order-list__product-image, .order-list__no-image-cell { border-radius: 0 !important; border-color: #d7d0c4 !important; }
+    .order-list__item { border-color: #d7d0c4 !important; }
+    .subtotal-line__value strong, .total-line__value strong { color: #2a2724; }
+    .footer__cell { border-top: 1px solid #d7d0c4; }
+    .disclaimer__subtext, .lalatoto-firma p { color: #6e675e; font-size: 13px; line-height: 1.7; }
+    .lalatoto-forud { background: #e6e0d6; padding: 24px; }
+    .lalatoto-forud h3 { margin: 0 0 12px; }
+    .lalatoto-forud p { margin: 0 0 12px; font-size: 15px; line-height: 1.6; color: #2a2724; }
+    .lalatoto-forud__label { margin: 0 0 8px !important; color: #6e675e !important; font-size: 11px !important; letter-spacing: 0.16em; text-transform: uppercase; }
+    .lalatoto-forud__knap { margin-top: 16px; }
+    .lalatoto-forud__knap td { background: #2a2724; padding: 14px 24px; }
+    .lalatoto-forud__knap a { color: #efebe4 !important; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; text-decoration: none; }
+    .lalatoto-forud__lille { margin: 12px 0 0 !important; color: #6e675e !important; font-size: 13px !important; }
   </style>
 </head>
 
@@ -3456,6 +3490,9 @@
             <td>
               
               <p class="disclaimer__subtext">Har du spørgsmål, så svar på denne mail eller skriv til os på <a href="mailto:{{ shop.email }}">{% if buyer_email_rtl == true %}<span dir="ltr" style="display: inline-block; unicode-bidi: isolate; font-size: inherit;">{% endif %}{{ shop.email }}{% if buyer_email_rtl == true %}</span>{% endif %}</a>.<!-- shopify-shop-marketplace-footer --></p>
+              <div class="lalatoto-firma">
+                <p>LALATOTO of Denmark ApS · CVR 45149218<br>Kulbyvej 16, 4270 Høng</p>
+              </div>
             </td>
           </tr>
         </table>

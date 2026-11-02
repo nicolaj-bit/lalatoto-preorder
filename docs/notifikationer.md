@@ -9,6 +9,7 @@ gennem API'et, så de rettes i admin under
 |---|---|---|
 | **Ordrebekræftelse** | Når ordren lægges | En blok, der kun vises, når en linje er en forudbestilling |
 | **Ordrefaktura** | Når datoen flyttes med «Gem ny dato» | «Betal nu» skjules på forudbestillinger |
+| **Forsendelsesbekræftelse** | Når ordren sendes | Kun Lalatotos udseende |
 
 ## 1. Ordrebekræftelse
 
@@ -169,6 +170,17 @@ og blok B **helt nederst** (efter alt andet). Gem, og tryk «Forhåndsvis».
 
 Alt, hvad Shopify havde i skabelonen, ligger nu mellem blok A og blok B og
 bruges kun, når ordren ikke er en forudbestilling.
+
+## 3. Forsendelsesbekræftelse
+
+Skabelonen i
+[`skabeloner/forsendelsesbekraeftelse.liquid`](skabeloner/forsendelsesbekraeftelse.liquid)
+er Shopifys egen på dansk med Lalatotos udseende og firmaoplysningerne
+nederst. Den sættes ind under *Indstillinger → Notifikationer →
+Kundenotifikationer → Forsendelsesbekræftelse → Rediger kode*.
+
+Alle tre skabeloner bruger samme stil (beige baggrund, Playfair i
+overskrifter, mørke knapper med små versaler).
 
 ## Afprøvet
 

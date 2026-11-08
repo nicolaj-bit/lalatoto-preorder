@@ -63,7 +63,10 @@
           form.method = 'post';
           form.action = '/localization';
           form.style.display = 'none';
+          /* Shopify kræver _method=put ligesom temaets egen landevælger.
+             Uden den svarer /localization 404, og kunden lander på en fejlside. */
           [
+            ['_method', 'put'],
             ['form_type', 'localization'],
             ['utf8', '✓'],
             ['country_code', country],

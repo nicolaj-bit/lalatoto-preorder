@@ -59,16 +59,39 @@ export async function latestAttemptsByOrder(entities: Entities): Promise<Map<str
 
 /** Offline-tokenet pr. butik i entiteten ShopAccess. */
 export function base44TokenStore(entities: Entities): TokenStore {
+  async function latest(shop: string) {
+    const rows = await entities.ShopAccess.filter({ shop }, "-obtained_at", 1);
+    return rows[0] ?? null;
+  }
   return {
     async get(shop) {
-      const rows = await entities.ShopAccess.filter({ shop }, "-obtained_at", 1);
-      return rows[0]?.access_token ?? null;
+      const r = await latest(shop);
+      if (!r?.access_token) return null;
+      return {
+        accessToken: r.access_token,
+        scope: r.scope ?? "",
+        refreshToken: r.refresh_token ?? null,
+        expiresAt: r.expires_at ?? null,
+        refreshExpiresAt: r.refresh_expires_at ?? null,
+      };
     },
-    async set(shop, accessToken, scope) {
-      const rows = await entities.ShopAccess.filter({ shop }, "-obtained_at", 1);
-      const record = { shop, access_token: accessToken, scope, obtained_at: new Date().toISOString() };
-      if (rows[0]) await entities.ShopAccess.update(rows[0].id, record);
+    async set(shop, token) {
+      const r = await latest(shop);
+      const record = {
+        shop,
+        access_token: token.accessToken,
+        scope: token.scope,
+        refresh_token: token.refreshToken ?? null,
+        expires_at: token.expiresAt ?? null,
+        refresh_expires_at: token.refreshExpiresAt ?? null,
+        obtained_at: new Date().toISOString(),
+      };
+      if (r) await entities.ShopAccess.update(r.id, record);
       else await entities.ShopAccess.create(record);
+    },
+    async clear(shop) {
+      const rows = await entities.ShopAccess.filter({ shop });
+      for (const r of rows) await entities.ShopAccess.delete(r.id);
     },
   };
 }

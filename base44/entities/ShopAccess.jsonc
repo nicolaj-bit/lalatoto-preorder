@@ -4,7 +4,10 @@
   "description": "Offline-token til butikkens Admin API, hentet med token exchange, når dashboardet åbnes i Shopify admin. Bruges, når butikken ikke ligger i appens organisation (lalatoto.dk). Læses og skrives kun af funktionerne med service role.",
   "properties": {
     "shop": { "type": "string", "description": "Butikkens myshopify-domæne, fx lalatoto.myshopify.com" },
-    "access_token": { "type": "string", "description": "Offline-token (hemmeligt)" },
+    "access_token": { "type": "string", "description": "Offline-token (hemmeligt). Udløber efter en time." },
+    "refresh_token": { "type": "string", "description": "Fornyer access_token (hemmeligt). Udløber efter 90 dage." },
+    "expires_at": { "type": "string", "format": "date-time", "description": "Hvornår access_token udløber" },
+    "refresh_expires_at": { "type": "string", "format": "date-time", "description": "Hvornår refresh_token udløber" },
     "scope": { "type": "string", "description": "De scopes, tokenet blev givet med" },
     "obtained_at": { "type": "string", "format": "date-time" }
   },

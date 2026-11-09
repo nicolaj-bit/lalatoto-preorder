@@ -4,7 +4,7 @@ import { chargeOrders, runChargeJob } from '../../shared/server/chargeJob.ts';
 import { listPreorderRows } from '../../shared/server/dashboard.ts';
 import { base44AttemptStore, base44TokenStore, latestAttemptsByOrder } from '../../shared/server/base44Store.ts';
 import { createProductSegment } from '../../shared/server/segment.ts';
-import { createShopifyGraphql, exchangeIdToken, shopifyEnv } from '../../shared/server/shopify.ts';
+import { createShopifyGraphql, exchangeIdToken, needsTokenExchange, shopifyEnv } from '../../shared/server/shopify.ts';
 
 // Dashboardet inde i Shopify admin (admin-app/ på Vercel) — uden Base44-login.
 // Brugeren godkendes med App Bridges ID token; se
@@ -17,12 +17,14 @@ Deno.serve(async (req) => {
     const graphql = createShopifyGraphql(env, fetch, tokens);
     return await handleAdminRequest(req, {
       env,
-      // Hver gang dashboardet åbnes, hentes et frisk offline-token med
-      // brugerens ID token, så de andre funktioner kan nå butikken.
+      // Når dashboardet åbnes, og der ikke er et brugbart offline-token,
+      // hentes et nyt med brugerens ID token, så de andre funktioner kan nå
+      // butikken. Ikke ved hver åbning: et nyt token gør refresh-tokenet
+      // ugyldigt, som et baggrundsjob måske er ved at bruge.
       onVerified: async (idToken) => {
         if (!tokens) return;
-        const { accessToken, scope } = await exchangeIdToken(env, idToken);
-        await tokens.set(env.store, accessToken, scope);
+        if (!needsTokenExchange(await tokens.get(env.store))) return;
+        await tokens.set(env.store, await exchangeIdToken(env, idToken));
       },
       listRows: async () => {
         const attempts = await latestAttemptsByOrder(base44!.asServiceRole.entities);

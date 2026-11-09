@@ -14,6 +14,7 @@ npm run base44:sync -- --to ../lalatoto-dashboard
 | `functions/chargeDuePreorders/` | Det automatiske træk på forfaldsdatoen. **Bruges ikke** — trækket er manuelt fra dashboardet (`adminPreorders`, `charge`). Ligger her, hvis det skal slås til igen |
 | `functions/remindUpcomingPreorders/` | Sender én mail til appens admin-brugere om de forudbestillinger, der forfalder om 7 dage. `{ dryRun: true }` viser mailen uden at sende |
 | `functions/listPreorders/` | Base44-dashboardets liste over forudbestillinger og kunder. Kun for admin |
+| `functions/waitlistSignup/` | Ventelisten på produktsiden i temaet. Uden Base44-login. Opretter eller opdaterer kunden med ventelistens tags (dannet ud fra varianten hos Shopify) og tilmelder kun nyhedsbrevet ved flueben. Se `shared/server/waitlistHandler.ts` |
 | `functions/adminPreorders/` | Dashboardet inde i Shopify admin: listen, «Træk» (`charge`) og «Opret segment» (`createSegment`). Uden Base44-login; godkendes med App Bridges ID token |
 | `workflows/Påmindelse før forfald.jsonc` | Kalder `remindUpcomingPreorders` hver dag kl. 8 dansk tid |
 | `entities/PreorderCharge.jsonc` | Hvert forsøg på at trække restbeløbet |

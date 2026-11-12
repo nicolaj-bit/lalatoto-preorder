@@ -13,7 +13,7 @@ const BASE44_APP_ID = '6ad0540094b2b23633a4f532';
 const ENDPOINT = `${BASE44_ORIGIN}/api/apps/${BASE44_APP_ID}/functions/orderSource`;
 
 /** Samme rækkefølge som SOURCES i orderSourceHandler.ts. */
-const SOURCES = ['instagram', 'facebook', 'tiktok', 'google', 'venner', 'influencer', 'club-no-sleep', 'andet'];
+const SOURCES = ['instagram', 'facebook', 'annonce', 'google', 'venner', 'influencer', 'club-no-sleep', 'andet'];
 const STORAGE_KEY = 'kilde-svaret';
 
 export default async () => {

@@ -1,0 +1,18 @@
+{
+  "heading": "Hvor hørte du om os første gang?",
+  "lead": "Ét klik hjælper os med at finde flere som dig.",
+  "sources": {
+    "instagram": "Instagram",
+    "facebook": "Facebook",
+    "tiktok": "TikTok",
+    "google": "Google",
+    "venner": "En ven eller familie",
+    "influencer": "Influencer eller blogger",
+    "club-no-sleep": "Club No Sleep-appen",
+    "andet": "Andet"
+  },
+  "otherLabel": "Hvor?",
+  "submit": "Send svar",
+  "thanks": "Tak for dit svar!",
+  "error": "Svaret kunne ikke sendes. Prøv igen."
+}

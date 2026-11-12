@@ -1,0 +1,18 @@
+{
+  "heading": "Wo hast du zum ersten Mal von uns gehört?",
+  "lead": "Ein Klick hilft uns, mehr Menschen wie dich zu finden.",
+  "sources": {
+    "instagram": "Instagram",
+    "facebook": "Facebook",
+    "tiktok": "TikTok",
+    "google": "Google",
+    "venner": "Freunde oder Familie",
+    "influencer": "Influencer oder Blogger",
+    "club-no-sleep": "Die Club No Sleep App",
+    "andet": "Anderes"
+  },
+  "otherLabel": "Wo?",
+  "submit": "Antwort senden",
+  "thanks": "Danke für deine Antwort!",
+  "error": "Die Antwort konnte nicht gesendet werden. Bitte versuche es erneut."
+}

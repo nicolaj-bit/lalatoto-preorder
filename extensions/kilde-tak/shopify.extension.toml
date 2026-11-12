@@ -1,0 +1,21 @@
+# Spørgsmålet «Hvor hørte du om os første gang?» på takkesiden efter et køb.
+# Svaret gemmes som tagget kilde-<svar> på ordren af Base44-funktionen
+# orderSource (base44/shared/server/orderSourceHandler.ts).
+# Blokken placeres på takkesiden i kasse-redigeringen (Indstillinger → Kasse →
+# Tilpas → Takkeside).
+api_version = "2026-07"
+
+[[extensions]]
+name = "Hvor hørte du om os"
+handle = "kilde-tak"
+type = "ui_extension"
+
+[[extensions.targeting]]
+module = "./src/ThankYou.jsx"
+target = "purchase.thank-you.block.render"
+
+[extensions.capabilities]
+# Kald til Base44-funktionen orderSource. Kræver «Allow network access»
+# under API-adgang i Partner Dashboard (er allerede slået til for
+# preorder-annuller).
+network_access = true

@@ -8,6 +8,7 @@ api_version = "2026-07"
 [[extensions]]
 name = "Hvor hørte du om os"
 handle = "kilde-tak"
+uid = "f78b98f3-d068-1493-9cd3-2777075eaca74747b3dd"
 type = "ui_extension"
 
 [[extensions.targeting]]

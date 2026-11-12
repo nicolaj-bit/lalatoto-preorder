@@ -105,7 +105,7 @@ describe("admin-app/dashboard.js", () => {
   });
 
   it("tæller kun åbne ordrer med i det udestående", () => {
-    expect(totals(rows)).toEqual({ count: 3, open: 2, overdue: 1, outstanding: 648, currency: "DKK" });
+    expect(totals(rows)).toMatchObject({ count: 3, open: 2, overdue: 1, outstanding: 648, currency: "DKK" });
   });
 
   it("linker til ordren i admin", () => {
@@ -212,5 +212,104 @@ describe("admin-app/live/index.html", () => {
 
   it("produktionsappen åbner live/", () => {
     expect(read("shopify.app.live.toml")).toMatch(/^application_url = "https:\/\/[^"]+\/live\/"$/m);
+  });
+});
+
+describe("dashboardets overblik og kilder", () => {
+  it("totals regner omsætning og næste forfald uden annullerede", async () => {
+    const { totals } = await import("../../admin-app/dashboard.js");
+    const now = new Date("2026-11-12T10:00:00Z");
+    const t = totals(
+      [
+        { status: "betalt", total: "1599.00", outstanding: "0", dueAt: "2027-02-26T09:00:00Z", currency: "DKK" },
+        { status: "afventer betaling", total: "1359.15", outstanding: "959.15", dueAt: "2027-02-18T09:00:00Z", currency: "DKK" },
+        { status: "annulleret", total: "1599.00", outstanding: "0", dueAt: "2026-12-01T09:00:00Z", currency: "DKK" },
+        { status: "betalt", total: "100.00", outstanding: "0", dueAt: "2026-10-01T09:00:00Z", currency: "DKK" },
+      ] as any,
+      now,
+    );
+    expect(t.active).toBe(3);
+    expect(t.revenue).toBe(3058.15);
+    expect(t.nextDue).toBe("2027-02-18T09:00:00Z");
+    expect(t.nextDueCount).toBe(1);
+    expect(t.outstanding).toBe(959.15);
+  });
+
+  it("sourceRows sorterer efter flest svar og regner andele af svarene", async () => {
+    const { sourceRows, answerRate } = await import("../../admin-app/dashboard.js");
+    const stats = {
+      orders: 20,
+      answered: 4,
+      counts: [
+        { source: "instagram", count: 1 },
+        { source: "annonce", count: 3 },
+        { source: "google", count: 0 },
+      ],
+    };
+    expect(sourceRows(stats).map((r: any) => [r.label, r.count, r.pct])).toEqual([
+      ["Annonce", 3, 75],
+      ["Instagram-profil", 1, 25],
+      ["Google-søgning", 0, 0],
+    ]);
+    expect(answerRate(stats)).toBe(20);
+  });
+
+  it("handleAdminRequest giver kilderne for den valgte periode", async () => {
+    let asked = -1;
+    const res = await handleAdminRequest(
+      new Request("https://x", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${sign(ADMIN)}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "sources", days: 30 }),
+      }),
+      {
+        env,
+        now: NOW,
+        listRows: async () => [],
+        chargePreview: async () => [],
+        createSegment: async () => ({ ok: true, id: "s", name: "n", existed: false }) as const,
+        charge: async () => [],
+        sources: async (days: number) => {
+          asked = days;
+          return { answered: 0 };
+        },
+      },
+    );
+    expect(await res.json()).toEqual({ ok: true, stats: { answered: 0 } });
+    expect(asked).toBe(30);
+  });
+});
+
+describe("sourceStats", () => {
+  it("tæller pr. svar i én forespørgsel og henter teksterne under «Andet»", async () => {
+    const { sourceStats } = await import("../../base44/shared/server/sourceStats.ts");
+    let query = "";
+    const stats = await sourceStats(
+      async (q: string) => {
+        query = q;
+        return {
+          total: { count: 40 },
+          s0: { count: 3 },
+          s2: { count: 5 },
+          s7: { count: 1 },
+          other: { nodes: [{ id: "gid://shopify/Order/9", name: "#1900", createdAt: "2026-11-10T10:00:00Z", kilde: { value: "Jordemoder" } }] },
+        } as any;
+      },
+      { days: 30, now: new Date("2026-11-12T10:00:00Z") },
+    );
+    expect(query).toContain(`tag:'kilde-annonce' created_at:>=2026-10-13`);
+    expect(stats.orders).toBe(40);
+    expect(stats.answered).toBe(9);
+    expect(stats.counts.find((c) => c.source === "annonce")?.count).toBe(5);
+    expect(stats.other[0]).toMatchObject({ orderName: "#1900", text: "Jordemoder" });
+  });
+
+  it("uden periode tæller alle ordrer", async () => {
+    const { sourceStats } = await import("../../base44/shared/server/sourceStats.ts");
+    let query = "";
+    const stats = await sourceStats(async (q: string) => { query = q; return {} as any; }, { days: 0 });
+    expect(query).not.toContain("created_at");
+    expect(stats.days).toBeNull();
+    expect(stats.answered).toBe(0);
   });
 });

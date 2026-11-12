@@ -42,15 +42,68 @@ export function filterRows(rows, search, status, productId) {
   });
 }
 
-export function totals(rows) {
+export function totals(rows, now = new Date()) {
   const open = rows.filter((r) => r.status === 'afventer betaling' || r.status === 'forfalden');
+  const active = rows.filter((r) => r.status !== 'annulleret');
+  // Næste forfald: den tidligste forfaldsdato fra i dag og frem blandt
+  // forudbestillinger, der ikke er annulleret.
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const upcoming = active
+    .map((r) => r.dueAt)
+    .filter((d) => d && Date.parse(d) >= today)
+    .sort((a, b) => Date.parse(a) - Date.parse(b));
   return {
     count: rows.length,
+    active: active.length,
     open: open.length,
     overdue: rows.filter((r) => r.status === 'forfalden').length,
     outstanding: open.reduce((sum, r) => sum + Number(r.outstanding), 0),
+    revenue: Math.round(active.reduce((sum, r) => sum + Number(r.total), 0) * 100) / 100,
+    nextDue: upcoming[0] ?? null,
+    nextDueCount: upcoming.filter((d) => formatDate(d) === formatDate(upcoming[0])).length,
     currency: rows[0]?.currency ?? 'DKK',
   };
+}
+
+/** Svarene fra takkesiden i samme rækkefølge og med samme ord som kunden ser. */
+export const SOURCE_LABELS = {
+  instagram: 'Instagram-profil',
+  facebook: 'Facebook-profil',
+  annonce: 'Annonce',
+  google: 'Google-søgning',
+  venner: 'En ven eller familie',
+  influencer: 'Influencer eller blogger',
+  'club-no-sleep': 'Club No Sleep-appen',
+  andet: 'Andet',
+};
+
+export const SOURCE_PERIODS = [
+  { days: 30, label: 'Seneste 30 dage' },
+  { days: 90, label: 'Seneste 90 dage' },
+  { days: 365, label: 'Seneste år' },
+  { days: 0, label: 'Alle' },
+];
+
+/**
+ * Rækker til fanen «Kilder»: navn, antal og andel af dem, der har svaret.
+ * Sorteret efter flest svar; svar uden nogen står sidst i fast rækkefølge.
+ */
+export function sourceRows(stats) {
+  const answered = stats?.answered ?? 0;
+  const order = Object.keys(SOURCE_LABELS);
+  return (stats?.counts ?? [])
+    .map((c) => ({
+      source: c.source,
+      label: SOURCE_LABELS[c.source] ?? c.source,
+      count: c.count,
+      pct: answered > 0 ? Math.round((c.count / answered) * 100) : 0,
+    }))
+    .sort((a, b) => b.count - a.count || order.indexOf(a.source) - order.indexOf(b.source));
+}
+
+/** Hvor stor en del af ordrerne i perioden, der har svaret, i hele procent. */
+export function answerRate(stats) {
+  return stats?.orders > 0 ? Math.round((stats.answered / stats.orders) * 100) : 0;
 }
 
 /**

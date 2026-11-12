@@ -24,8 +24,9 @@
         </s-banner>
       </div>
 
+      <!-- Overblikket står altid øverst, uanset hvilken fane der er valgt. -->
       <s-section>
-        <s-grid gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))" gap="base" id="stats"></s-grid>
+        <s-grid gridTemplateColumns="repeat(auto-fit, minmax(180px, 1fr))" gap="base" id="stats"></s-grid>
       </s-section>
 
       <div id="result-section" hidden>
@@ -40,58 +41,106 @@
         <s-button slot="secondary-actions" commandFor="charge-modal" command="--hide">Annuller</s-button>
       </s-modal>
 
-      <s-section heading="Salg pr. variant">
-        <s-paragraph color="subdued">
-          Annullerede forudbestillinger tæller ikke med. «Træk alle» trækker
-          restbeløbet på alle åbne forudbestillinger af produktet — brug den,
-          når varen er kommet hjem. «Opret segment» laver et
-          kundesegment i Shopify med alle, der har købt produktet, så det kan
-          bruges i Shopify Email. Shopify Email sender kun til kunder, der har
-          sagt ja til markedsføring.
-        </s-paragraph>
-      </s-section>
-      <s-section padding="none">
-        <s-table id="variants" loading>
-          <s-table-header-row>
-            <s-table-header listSlot="primary">Produkt og variant</s-table-header>
-            <s-table-header format="numeric">Ordrer</s-table-header>
-            <s-table-header format="numeric">Stk.</s-table-header>
-            <s-table-header>Andel af produktet</s-table-header>
-            <s-table-header format="numeric">Omsætning</s-table-header>
-            <s-table-header></s-table-header>
-          </s-table-header-row>
-          <s-table-body id="variant-rows"></s-table-body>
-        </s-table>
-      </s-section>
+      <s-modal id="customer-modal" heading="Kunde">
+        <s-stack gap="small-200" id="customer-modal-body"></s-stack>
+        <s-button slot="secondary-actions" commandFor="customer-modal" command="--hide">Luk</s-button>
+      </s-modal>
 
-      <s-section padding="none">
-        <s-table id="table" loading>
-          <s-grid slot="filters" gridTemplateColumns="1fr auto auto" gap="small-200">
-            <s-search-field label="Søg" labelAccessibilityVisibility="exclusive" placeholder="Søg på kunde, e-mail, ordre eller vare" id="search"></s-search-field>
-            <s-select label="Produkt" labelAccessibilityVisibility="exclusive" id="product">
-              <s-option value="alle">Alle produkter</s-option>
-            </s-select>
-            <s-select label="Status" labelAccessibilityVisibility="exclusive" id="status">
-              <s-option value="alle">Alle</s-option>
-              <s-option value="afventer betaling">Afventer betaling</s-option>
-              <s-option value="forfalden">Forfalden</s-option>
-              <s-option value="betalt">Betalt</s-option>
-              <s-option value="annulleret">Annulleret</s-option>
-            </s-select>
-          </s-grid>
-          <s-table-header-row>
-            <s-table-header listSlot="primary">Ordre</s-table-header>
-            <s-table-header listSlot="secondary">Kunde</s-table-header>
-            <s-table-header>Varer</s-table-header>
-            <s-table-header format="numeric">Restbeløb</s-table-header>
-            <s-table-header>Forfalder</s-table-header>
-            <s-table-header listSlot="inline">Status</s-table-header>
-            <s-table-header>Seneste træk</s-table-header>
-            <s-table-header></s-table-header>
-          </s-table-header-row>
-          <s-table-body id="rows"></s-table-body>
-        </s-table>
-      </s-section>
+      <!-- Fanerne. Knappen for den valgte fane er udfyldt (app.js). -->
+      <s-stack direction="inline" gap="small-200" id="tabs">
+        <s-button data-tab="ordrer">Ordrer</s-button>
+        <s-button data-tab="produkter">Produkter</s-button>
+        <s-button data-tab="kilder">Kilder</s-button>
+      </s-stack>
+
+      <div data-panel="ordrer">
+        <s-section padding="none">
+          <s-box padding="base">
+            <s-paragraph color="subdued">Alle forudbestillinger. Søg, filtrér efter status, og se hvornår de forfalder. Klik på kundens navn for adresse og telefon.</s-paragraph>
+          </s-box>
+          <s-table id="table" loading>
+            <s-grid slot="filters" gridTemplateColumns="1fr auto auto" gap="small-200">
+              <s-search-field label="Søg" labelAccessibilityVisibility="exclusive" placeholder="Søg på kunde, e-mail, ordre eller vare" id="search"></s-search-field>
+              <s-select label="Produkt" labelAccessibilityVisibility="exclusive" id="product">
+                <s-option value="alle">Alle produkter</s-option>
+              </s-select>
+              <s-select label="Status" labelAccessibilityVisibility="exclusive" id="status">
+                <s-option value="alle">Alle</s-option>
+                <s-option value="afventer betaling">Afventer betaling</s-option>
+                <s-option value="forfalden">Forfalden</s-option>
+                <s-option value="betalt">Betalt</s-option>
+                <s-option value="annulleret">Annulleret</s-option>
+              </s-select>
+            </s-grid>
+            <s-table-header-row>
+              <s-table-header listSlot="primary">Ordre</s-table-header>
+              <s-table-header listSlot="secondary">Kunde</s-table-header>
+              <s-table-header>Varer</s-table-header>
+              <s-table-header format="numeric">Restbeløb</s-table-header>
+              <s-table-header>Forfalder</s-table-header>
+              <s-table-header listSlot="inline">Status</s-table-header>
+              <s-table-header>Seneste træk</s-table-header>
+              <s-table-header></s-table-header>
+            </s-table-header-row>
+            <s-table-body id="rows"></s-table-body>
+          </s-table>
+        </s-section>
+      </div>
+
+      <div data-panel="produkter" hidden>
+        <s-section padding="none">
+          <s-box padding="base">
+            <s-stack gap="small-200">
+              <s-stack direction="inline" gap="small-200" alignItems="center">
+                <s-paragraph color="subdued">Salg pr. produkt og variant. Herfra trækker du restbeløbet og laver kundesegmenter.</s-paragraph>
+                <s-button variant="tertiary" id="help-toggle" accessibilityLabel="Hvad betyder knapperne?">?</s-button>
+              </s-stack>
+              <div id="help" hidden>
+                <s-paragraph color="subdued">
+                  Annullerede forudbestillinger tæller ikke med. «Træk alle» trækker
+                  restbeløbet på alle åbne forudbestillinger af produktet — brug den,
+                  når varen er kommet hjem. «Opret segment» laver et kundesegment i
+                  Shopify med alle, der har købt produktet, så det kan bruges i
+                  Shopify Email. Shopify Email sender kun til kunder, der har sagt ja
+                  til markedsføring.
+                </s-paragraph>
+              </div>
+            </s-stack>
+          </s-box>
+          <s-table id="variants" loading>
+            <s-table-header-row>
+              <s-table-header listSlot="primary">Produkt og variant</s-table-header>
+              <s-table-header format="numeric">Ordrer</s-table-header>
+              <s-table-header format="numeric">Stk.</s-table-header>
+              <s-table-header>Andel af produktet</s-table-header>
+              <s-table-header format="numeric">Omsætning</s-table-header>
+              <s-table-header></s-table-header>
+            </s-table-header-row>
+            <s-table-body id="variant-rows"></s-table-body>
+          </s-table>
+        </s-section>
+      </div>
+
+      <div data-panel="kilder" hidden>
+        <s-section>
+          <s-stack gap="base">
+            <s-grid gridTemplateColumns="1fr auto" gap="base" alignItems="center">
+              <s-paragraph color="subdued">Hvor kunderne har hørt om jer første gang – svarene fra spørgsmålet på takkesiden. Gælder alle ordrer, ikke kun forudbestillinger.</s-paragraph>
+              <s-select label="Periode" labelAccessibilityVisibility="exclusive" id="source-period"></s-select>
+            </s-grid>
+            <div id="source-error" hidden>
+              <s-banner tone="critical" heading="Kunne ikke hente svarene">
+                <s-paragraph id="source-error-text"></s-paragraph>
+              </s-banner>
+            </div>
+            <s-text color="subdued" id="source-summary"></s-text>
+            <s-stack gap="small-300" id="source-rows"></s-stack>
+          </s-stack>
+        </s-section>
+        <s-section heading="Svar under «Andet»">
+          <s-stack gap="small-200" id="source-other"></s-stack>
+        </s-section>
+      </div>
     </s-page>
   </body>
 </html>

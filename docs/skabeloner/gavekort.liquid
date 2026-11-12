@@ -1,0 +1,208 @@
+{%- comment -%}
+  Lalatoto: mailen med gavekortet (Indstillinger → Notifikationer →
+  Kundenotifikationer → Gavekort oprettet). Samme udtryk som ordrebekræftelsen
+  og forsendelsesmailen: beige baggrund, Playfair i overskrifter, mørk knap
+  med små versaler og firmaoplysninger nederst.
+
+  Kortbilledet er det samme som på gavekortets produktside. Skiftes billedet
+  dér, skal adressen i CARD_IMAGE herunder også skiftes.
+{%- endcomment -%}
+{% assign card_image = 'https://cdn.shopify.com/s/files/1/0662/2865/0121/files/gavekort-lalatoto-2.jpg?v=1794514777&width=960' %}
+{% assign buyer_email_rtl = false %}{% if locale_direction == 'rtl' %}{% assign buyer_email_rtl = true %}{% endif %}
+{% if gift_card.recipient %}
+  {% if gift_card.customer %}
+    {% if gift_card.customer.name != blank %}
+      {% assign sender_name = gift_card.customer.name %}
+    {% elsif gift_card.customer.email != blank %}
+      {% assign sender_name = gift_card.customer.email %}
+    {% else %}
+      {% assign sender_name = gift_card.customer.phone %}
+    {% endif %}
+  {% else %}
+    {% assign sender_name = shop.name %}
+  {% endif %}
+
+  {% if gift_card.recipient.nickname != blank %}
+    {% assign recipient_name = gift_card.recipient.nickname %}
+  {% elsif gift_card.recipient.name != blank %}
+    {% assign recipient_name = gift_card.recipient.name %}
+  {% else %}
+    {% assign recipient_name = gift_card.recipient.email %}
+  {% endif %}
+
+  {% capture email_title %}Du har fået et gavekort fra {{ sender_name }}{% endcapture %}
+  {% capture email_heading %}Kære {{ recipient_name }}, du har fået et gavekort{% endcapture %}
+  {% capture email_body %}{{ sender_name }} har givet dig et gavekort til Lalatoto. Det kan bruges på alt i webshoppen.{% endcapture %}
+{% else %}
+  {% capture email_title %}Her er dit gavekort{% endcapture %}
+  {% capture email_heading %}Her er dit gavekort{% endcapture %}
+  {% capture email_body %}Tak for dit køb. Gavekortet kan bruges på alt i webshoppen. Skal det gives videre, kan du sende denne mail eller skrive koden af.{% endcapture %}
+{% endif %}
+
+<!DOCTYPE html>
+<html lang="da"{% if buyer_email_rtl %} dir="rtl"{% endif %}>
+  <head>
+  <title>{{ email_title }}</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width">
+  <link rel="stylesheet" type="text/css" href="/assets/notifications/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400&display=swap" rel="stylesheet" type="text/css">
+  <style>
+    /* Lalatoto: samme udtryk som de øvrige mails (se forsendelsesbekraeftelse.liquid) */
+    body, .body, .header, .footer, .section, .row { background: #efebe4 !important; }
+    body, td, p, li { color: #2a2724; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+    h1, h2, h3 { color: #2a2724; font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; font-weight: 400; letter-spacing: normal; }
+    h2 { font-size: 30px; line-height: 1.2; }
+    p { color: #4a453f; }
+    .shop-name__text { color: #2a2724; font-family: 'Playfair Display', Georgia, serif; font-size: 24px; letter-spacing: 0.2em; }
+    .button__cell { background: #2a2724 !important; border-radius: 0 !important; }
+    .button__text { color: #efebe4 !important; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; }
+    a, a:hover, a:active, a:visited { color: #2a2724; }
+    .footer__cell { border-top: 1px solid #d7d0c4; }
+    .disclaimer__subtext, .lalatoto-firma p { color: #6e675e; font-size: 13px; line-height: 1.7; }
+
+    .lalatoto-gave__kort { padding: 8px 0 32px; }
+    .lalatoto-gave__kort img { display: block; width: 100%; max-width: 480px; height: auto; border: 0; }
+    .lalatoto-gave__besked { margin: 24px 0 32px; padding: 0 0 0 20px; border-left: 1px solid #2a2724; font-family: 'Playfair Display', Georgia, serif; font-size: 20px; line-height: 1.5; color: #2a2724; }
+    .lalatoto-gave__fra { margin: 8px 0 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; color: #6e675e; }
+    .lalatoto-gave__label { margin: 0 0 8px; color: #6e675e !important; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; }
+    .lalatoto-gave__beloeb { margin: 0 0 28px; font-family: 'Playfair Display', Georgia, serif; font-size: 40px; line-height: 1.1; color: #2a2724; }
+    .lalatoto-gave__kode { padding: 18px 20px; border: 1px solid #2a2724; font-family: 'Courier New', Courier, monospace; font-size: 20px; letter-spacing: 0.12em; color: #2a2724; text-align: center; }
+    .lalatoto-gave__lille { margin: 12px 0 0; color: #6e675e !important; font-size: 13px; line-height: 1.6; }
+    .lalatoto-gave__link { padding-top: 16px; font-size: 14px; }
+  </style>
+</head>
+
+  <body>
+    <table class="body{% if buyer_email_rtl %} buyer-email-rtl{% endif %}"{% if buyer_email_rtl %} dir="rtl"{% endif %}>
+      <tr>
+        <td>
+          <table class="header row">
+            <tr>
+              <td class="header__cell">
+                <center>
+                  <table class="container"{% if buyer_email_rtl == true %} dir="rtl"{% endif %}>
+                    <tr>
+                      <td>
+                        <table class="row">
+                          <tr>
+                            <td class="shop-name__cell">
+                              {%- if shop.email_logo_url %}
+                                <img src="{{ shop.email_logo_url }}" alt="{{ shop.name }}" width="{{ shop.email_logo_width }}">
+                              {%- else %}
+                                <h1 class="shop-name__text"><a href="{{ shop.url }}">{{ shop.name }}</a></h1>
+                              {%- endif %}
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </center>
+              </td>
+            </tr>
+          </table>
+
+          <table class="row content">
+            <tr>
+              <td class="content__cell">
+                <center>
+                  <table class="container"{% if buyer_email_rtl == true %} dir="rtl"{% endif %}>
+                    <tr>
+                      <td>
+                        <h2>{{ email_heading }}</h2>
+                        <p>{{ email_body }}</p>
+
+                        {% if gift_card.recipient and gift_card.message != blank %}
+                          <p class="lalatoto-gave__besked">
+                            “{{ gift_card.message }}”
+                            <span class="lalatoto-gave__fra" style="display: block;">– {{ sender_name }}</span>
+                          </p>
+                        {% endif %}
+
+                        <table class="row">
+                          <tr>
+                            <td class="lalatoto-gave__kort">
+                              <img src="{{ card_image }}" alt="Lalatoto gavekort" width="480">
+                            </td>
+                          </tr>
+                        </table>
+
+                        <p class="lalatoto-gave__label">Beløb</p>
+                        <p class="lalatoto-gave__beloeb">{{ gift_card.initial_value | money_without_trailing_zeros }}</p>
+
+                        <p class="lalatoto-gave__label">Din kode</p>
+                        <table class="row">
+                          <tr>
+                            <td class="lalatoto-gave__kode">{% if buyer_email_rtl == true %}<span dir="ltr">{% endif %}{{ gift_card.code | format_code }}{% if buyer_email_rtl == true %}</span>{% endif %}</td>
+                          </tr>
+                        </table>
+                        <p class="lalatoto-gave__lille">
+                          Skriv koden i feltet til rabatkode eller gavekort, når du betaler.
+                          {%- if gift_card.expires_on %} Gavekortet kan bruges til og med {{ gift_card.expires_on | date: '%-d.%-m.%Y' }}.{% endif %}
+                        </p>
+
+                        <table class="row actions">
+                          <tr>
+                            <td class="empty-line">&nbsp;</td>
+                          </tr>
+                          <tr>
+                            <td class="actions__cell">
+                              <table class="button main-action-cell">
+                                <tr>
+                                  <td class="button__cell"><a href="{{ shop.url }}" class="button__text">Gå til webshoppen</a></td>
+                                </tr>
+                              </table>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="lalatoto-gave__link">
+                              <a href="{{ gift_card.url }}">Se saldoen på gavekortet</a>
+                            </td>
+                          </tr>
+                        </table>
+
+                        {% if gift_card.pass_url %}
+                          <table class="row">
+                            <tr>
+                              <td style="padding-top: 24px;">
+                                <a href="{{ gift_card.pass_url }}">
+                                  <img src="{{ 'gift-card/add-to-apple-wallet.png' | shopify_asset_url }}" alt="Føj til Apple Wallet" width="120" height="40">
+                                </a>
+                              </td>
+                            </tr>
+                          </table>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  </table>
+                </center>
+              </td>
+            </tr>
+          </table>
+
+          <table class="row footer">
+            <tr>
+              <td class="footer__cell">
+                <center>
+                  <table class="container"{% if buyer_email_rtl == true %} dir="rtl"{% endif %}>
+                    <tr>
+                      <td>
+                        <p class="disclaimer__subtext">Har du spørgsmål, kan du svare på denne mail eller skrive til os på <a href="mailto:{{ shop.email }}">{{ shop.email }}</a>.</p>
+                        <div class="lalatoto-firma">
+                          <p>LALATOTO of Denmark ApS · CVR 45149218<br>Kulbyvej 16, 4270 Høng</p>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </center>
+              </td>
+            </tr>
+          </table>
+
+          <img src="{{ 'notifications/spacer.png' | shopify_asset_url }}" class="spacer" height="1" />
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

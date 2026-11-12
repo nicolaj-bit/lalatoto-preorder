@@ -4,6 +4,7 @@ import { chargeOrders, runChargeJob } from '../../shared/server/chargeJob.ts';
 import { listPreorderRows } from '../../shared/server/dashboard.ts';
 import { base44AttemptStore, base44TokenStore, latestAttemptsByOrder } from '../../shared/server/base44Store.ts';
 import { createProductSegment } from '../../shared/server/segment.ts';
+import { sourceStats } from '../../shared/server/sourceStats.ts';
 import { createShopifyGraphql, exchangeIdToken, needsTokenExchange, shopifyEnv } from '../../shared/server/shopify.ts';
 
 // Dashboardet inde i Shopify admin (admin-app/ på Vercel) — uden Base44-login.
@@ -33,6 +34,7 @@ Deno.serve(async (req) => {
       chargePreview: () =>
         runChargeJob({ graphql, store: base44AttemptStore(base44!.asServiceRole.entities), dryRun: true }),
       createSegment: (productId, productTitle) => createProductSegment(graphql, productId, productTitle),
+      sources: (days) => sourceStats(graphql, { days }),
       charge: async (orderIds) => {
         const results = await chargeOrders(
           { graphql, store: base44AttemptStore(base44!.asServiceRole.entities) },

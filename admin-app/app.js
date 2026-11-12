@@ -1,7 +1,7 @@
 // Dashboardet inde i Shopify admin. Bygges med Polaris' web components, så
 // det ligner resten af admin. Data kommer fra Base44 (adminPreorders).
 import {
-  OUTCOME_TEXT, STATUS_TONE, callAdmin, chargeSummary, chargeableForProduct, filterRows, isChargeable, formatDate, formatMoney, orderLink, segmentLink, segmentQuery, totals, variantStats,
+  OUTCOME_TEXT, SOURCE_PERIODS, STATUS_TONE, answerRate, callAdmin, chargeSummary, chargeableForProduct, filterRows, isChargeable, formatDate, formatMoney, orderLink, segmentLink, segmentQuery, sourceRows, totals, variantStats,
 } from './dashboard.js';
 
 const $ = (id) => document.getElementById(id);
@@ -23,20 +23,37 @@ function h(tag, attrs = {}, ...children) {
 
 const idToken = () => window.shopify.idToken();
 
-function stat(label, value, tone) {
-  return h('s-box', { padding: 'base', border: 'base', borderRadius: 'base', background: 'base' },
-    h('s-text', { color: 'subdued' }, label),
-    h('s-heading', {}, h('s-text', tone ? { tone } : {}, value)));
+function stat(label, value, note, tone) {
+  return h('s-box', { padding: 'base', border: 'base', borderRadius: 'base', background: tone ? 'subdued' : 'base' },
+    h('s-stack', { gap: 'small-200' },
+      h('s-text', { color: 'subdued' }, label),
+      h('s-heading', {}, h('s-text', tone ? { tone } : {}, value)),
+      note && h('s-text', { color: 'subdued' }, note)));
 }
 
 function renderStats() {
   const t = totals(rows);
   $('stats').replaceChildren(
-    stat('Forudbestillinger', t.count),
-    stat('Venter på betaling', t.open),
-    stat('Forfaldne', t.overdue, t.overdue > 0 ? 'critical' : null),
-    stat('Udestående', formatMoney(t.outstanding, t.currency)),
+    stat('Forudbestillinger', t.active, t.count > t.active ? `${t.count - t.active} annulleret` : 'Ingen annulleret'),
+    stat('Omsætning', formatMoney(t.revenue, t.currency), 'Uden annullerede'),
+    stat('Næste forfald', t.nextDue ? formatDate(t.nextDue) : '–', t.nextDue ? `${t.nextDueCount} ${t.nextDueCount === 1 ? 'ordre' : 'ordrer'}` : 'Ingen kommende'),
+    t.overdue > 0
+      ? stat('Forfaldne', t.overdue, `${formatMoney(t.outstanding, t.currency)} udestående`, 'critical')
+      : stat('Udestående', formatMoney(t.outstanding, t.currency), t.open > 0 ? `${t.open} venter på betaling` : 'Alt er betalt'),
   );
+}
+
+/** Adresse og telefon vises først, når der klikkes på kundens navn. */
+function showCustomer(r) {
+  const c = r.customer;
+  $('customer-modal').setAttribute('heading', c.name ?? 'Kunde');
+  $('customer-modal-body').replaceChildren(
+    c.email && h('s-link', { href: `mailto:${c.email}` }, c.email),
+    c.phone && h('s-text', {}, c.phone),
+    r.shippingAddress && h('s-text', {}, r.shippingAddress),
+    h('s-link', { href: orderLink(r.orderId), target: '_top' }, `Åbn ordre ${r.orderNumber}`),
+  );
+  $('customer-modal').showOverlay();
 }
 
 function row(r) {
@@ -48,10 +65,8 @@ function row(r) {
         h('s-text', { color: 'subdued' }, formatDate(r.createdAt)))),
     h('s-table-cell', {},
       h('s-stack', { gap: 'small-500' },
-        h('s-text', { type: 'strong' }, c.name ?? '–'),
-        c.email && h('s-link', { href: `mailto:${c.email}` }, c.email),
-        c.phone && h('s-text', {}, c.phone),
-        r.shippingAddress && h('s-text', { color: 'subdued' }, r.shippingAddress))),
+        h('s-link', { 'data-customer': r.orderId }, c.name ?? '–'),
+        c.email && h('s-text', { color: 'subdued' }, c.email))),
     h('s-table-cell', {}, h('s-stack', { gap: 'small-500' }, r.items.map((i) => h('s-text', {}, i)))),
     h('s-table-cell', {},
       h('s-stack', { gap: 'small-500', alignItems: 'end' },
@@ -162,6 +177,10 @@ function renderRows() {
       const row = rows.find((r) => r.orderId === btn.dataset.chargeOrder);
       btn.addEventListener('click', () => askCharge([row], row.orderNumber));
     }
+    for (const link of $('rows').querySelectorAll('s-link[data-customer]')) {
+      const row = rows.find((r) => r.orderId === link.dataset.customer);
+      link.addEventListener('click', () => showCustomer(row));
+    }
   });
   $('rows').replaceChildren(
     ...(shown.length > 0
@@ -228,9 +247,80 @@ async function confirmCharge() {
   }
 }
 
-$('refresh').addEventListener('click', load);
+// ---- Faner ---------------------------------------------------------------
+
+const TAB_KEY = 'lalatoto-dashboard-fane';
+let sourcesLoaded = false;
+
+function showTab(name) {
+  for (const btn of $('tabs').querySelectorAll('s-button[data-tab]')) {
+    btn.setAttribute('variant', btn.dataset.tab === name ? 'primary' : 'secondary');
+  }
+  for (const panel of document.querySelectorAll('[data-panel]')) {
+    panel.hidden = panel.dataset.panel !== name;
+  }
+  try { sessionStorage.setItem(TAB_KEY, name); } catch {}
+  if (name === 'kilder' && !sourcesLoaded) loadSources();
+}
+
+for (const btn of $('tabs').querySelectorAll('s-button[data-tab]')) {
+  btn.addEventListener('click', () => showTab(btn.dataset.tab));
+}
+
+// ---- Fanen «Kilder» -------------------------------------------------------
+
+$('source-period').replaceChildren(...SOURCE_PERIODS.map((p) => h('s-option', { value: String(p.days) }, p.label)));
+$('source-period').value = '90';
+
+function sourceBar(pct) {
+  return h('div', { style: 'flex:1;height:10px;border-radius:5px;background:#e3e3e3;overflow:hidden' },
+    h('div', { style: `width:${pct}%;height:100%;background:#8ec5ff` }));
+}
+
+async function loadSources() {
+  sourcesLoaded = true;
+  $('source-error').hidden = true;
+  $('source-summary').textContent = 'Henter svar …';
+  try {
+    const { stats } = await callAdmin('sources', idToken, { days: Number($('source-period').value) });
+    const list = sourceRows(stats);
+    $('source-summary').textContent = stats.answered > 0
+      ? `${stats.answered} af ${stats.orders} ordrer har svaret (${answerRate(stats)} %).`
+      : `Ingen svar endnu i perioden (${stats.orders} ordrer).`;
+    $('source-rows').replaceChildren(...list.map((r) =>
+      h('s-grid', { gridTemplateColumns: '200px 1fr 90px', gap: 'base', alignItems: 'center' },
+        h('s-text', { type: r.count > 0 ? 'strong' : undefined }, r.label),
+        sourceBar(r.pct),
+        h('s-text', { color: 'subdued' }, `${r.count} · ${r.pct} %`))));
+    $('source-other').replaceChildren(
+      ...(stats.other.length > 0
+        ? stats.other.map((o) => h('s-stack', { direction: 'inline', gap: 'small-200' },
+          h('s-link', { href: orderLink(o.orderId), target: '_top' }, o.orderName),
+          h('s-text', { color: 'subdued' }, formatDate(o.createdAt)),
+          h('s-text', {}, o.text ? `«${o.text}»` : '(ingen tekst)')))
+        : [h('s-text', { color: 'subdued' }, 'Ingen har valgt «Andet» i perioden.')]),
+    );
+  } catch (error) {
+    sourcesLoaded = false;
+    $('source-summary').textContent = '';
+    $('source-error-text').textContent = error.message;
+    $('source-error').hidden = false;
+  }
+}
+
+$('source-period').addEventListener('change', loadSources);
+$('help-toggle').addEventListener('click', () => { $('help').hidden = !$('help').hidden; });
+
+$('refresh').addEventListener('click', () => {
+  load();
+  if (sourcesLoaded) loadSources();
+});
 $('charge-confirm').addEventListener('click', confirmCharge);
 $('search').addEventListener('input', renderRows);
 $('status').addEventListener('change', renderRows);
 $('product').addEventListener('change', renderRows);
+
+let startTab = 'ordrer';
+try { startTab = sessionStorage.getItem(TAB_KEY) || 'ordrer'; } catch {}
+showTab(['ordrer', 'produkter', 'kilder'].includes(startTab) ? startTab : 'ordrer');
 load();

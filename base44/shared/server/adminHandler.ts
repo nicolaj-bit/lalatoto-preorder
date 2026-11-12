@@ -4,6 +4,7 @@
 //   POST { action: "list" | "chargePreview" }
 //   POST { action: "createSegment", productId, productTitle }
 //   POST { action: "charge", orderIds: [...] }   træk restbeløbet nu
+//   POST { action: "sources", days }              svarene fra takkesiden
 //   Authorization: Bearer <ID token fra App Bridge>
 //
 // Base44-siden må ikke vises inde i Shopify (den sender X-Frame-Options:
@@ -45,6 +46,8 @@ export async function handleAdminRequest(
     chargePreview: () => Promise<JobResult[]>;
     createSegment: (productId: string, productTitle: string) => Promise<SegmentResult>;
     charge: (orderIds: string[]) => Promise<JobResult[]>;
+    /** Fanen «Kilder»: svarene på «Hvor hørte du om os». `days` 0 betyder alle. */
+    sources?: (days: number) => Promise<unknown>;
     /** Kaldes med det kontrollerede ID token, når dashboardet hentes (action «list»). */
     onVerified?: (idToken: string) => Promise<void>;
     now?: Date;
@@ -63,7 +66,7 @@ export async function handleAdminRequest(
   if (!verified.ok) return json({ ok: false, error: "Ingen adgang" }, 401);
 
   const body = (await req.json().catch(() => null)) as
-    | { action?: unknown; productId?: unknown; productTitle?: unknown; orderIds?: unknown }
+    | { action?: unknown; productId?: unknown; productTitle?: unknown; orderIds?: unknown; days?: unknown }
     | null;
   if (body?.action === "list") {
     await deps.onVerified?.(token);
@@ -83,6 +86,10 @@ export async function handleAdminRequest(
       return json({ ok: false, error: "Ugyldige ordrer" }, 400);
     }
     return json({ ok: true, results: await deps.charge(ids as string[]) });
+  }
+  if (body?.action === "sources" && deps.sources) {
+    const days = typeof body.days === "number" && Number.isInteger(body.days) && body.days >= 0 ? body.days : 90;
+    return json({ ok: true, stats: await deps.sources(days) });
   }
   return json({ ok: false, error: "Ukendt handling" }, 400);
 }

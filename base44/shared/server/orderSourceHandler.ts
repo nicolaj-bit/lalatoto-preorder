@@ -27,7 +27,7 @@ export const SOURCE_CORS_HEADERS = {
 export const SOURCES = [
   "instagram",
   "facebook",
-  "tiktok",
+  "annonce",
   "google",
   "venner",
   "influencer",

@@ -1,0 +1,20 @@
+# Rabatkoden fra nyhedsbrevets pop-up (VELKOMMEN15): 15 % på alt, der ikke er
+# på tilbud. Selve koden oprettes som en app-rabat (discountCodeAppCreate) med
+# denne funktion. Se src/cart_lines_discounts_generate_run.js.
+api_version = "2026-07"
+
+[[extensions]]
+name = "t:name"
+handle = "nyhedsbrev-rabat"
+type = "function"
+uid = "1491ccd0-be4e-151b-418a-dd8c2093e49fb24d9279"
+description = "t:description"
+
+  [[extensions.targeting]]
+  target = "cart.lines.discounts.generate.run"
+  input_query = "src/cart_lines_discounts_generate_run.graphql"
+  export = "cart-lines-discounts-generate-run"
+
+  [extensions.build]
+  command = ""
+  path = "dist/function.wasm"

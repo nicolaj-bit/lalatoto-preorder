@@ -1,0 +1,30 @@
+{
+  "payload": {
+    "export": "cart-lines-discounts-generate-run",
+    "target": "cart.lines.discounts.generate.run",
+    "input": {
+      "cart": {
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/1",
+            "merchandise": {
+              "__typename": "ProductVariant",
+              "product": {
+                "isGiftCard": false,
+                "tilbud": null
+              }
+            }
+          }
+        ]
+      },
+      "discount": {
+        "discountClasses": [
+          "ORDER"
+        ]
+      }
+    },
+    "output": {
+      "operations": []
+    }
+  }
+}

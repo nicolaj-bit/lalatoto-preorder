@@ -1,0 +1,92 @@
+{
+  "payload": {
+    "export": "cart-lines-discounts-generate-run",
+    "target": "cart.lines.discounts.generate.run",
+    "input": {
+      "cart": {
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/1",
+            "merchandise": {
+              "__typename": "ProductVariant",
+              "product": {
+                "isGiftCard": false,
+                "tilbud": null
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/2",
+            "merchandise": {
+              "__typename": "ProductVariant",
+              "product": {
+                "isGiftCard": false,
+                "tilbud": {
+                  "value": "50"
+                }
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/3",
+            "merchandise": {
+              "__typename": "ProductVariant",
+              "product": {
+                "isGiftCard": false,
+                "tilbud": {
+                  "value": "0"
+                }
+              }
+            }
+          },
+          {
+            "id": "gid://shopify/CartLine/4",
+            "merchandise": {
+              "__typename": "ProductVariant",
+              "product": {
+                "isGiftCard": true,
+                "tilbud": null
+              }
+            }
+          }
+        ]
+      },
+      "discount": {
+        "discountClasses": [
+          "PRODUCT"
+        ]
+      }
+    },
+    "output": {
+      "operations": [
+        {
+          "productDiscountsAdd": {
+            "candidates": [
+              {
+                "message": "15 % nyhedsbrevsrabat",
+                "targets": [
+                  {
+                    "cartLine": {
+                      "id": "gid://shopify/CartLine/1"
+                    }
+                  },
+                  {
+                    "cartLine": {
+                      "id": "gid://shopify/CartLine/3"
+                    }
+                  }
+                ],
+                "value": {
+                  "percentage": {
+                    "value": 15
+                  }
+                }
+              }
+            ],
+            "selectionStrategy": "FIRST"
+          }
+        }
+      ]
+    }
+  }
+}

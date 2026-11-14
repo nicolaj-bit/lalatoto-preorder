@@ -19,7 +19,10 @@ embedded = true
 # forfalds- og klargøringsdatoen på lagte ordrer, når datoen ændres.
 # write_customers opretter kundesegmentet pr. produkt fra dashboardet
 # (segmentCreate). Appen ændrer ikke selve kunderne.
-scopes = "write_products,read_products,write_purchase_options,read_purchase_options,read_orders,write_orders,read_all_orders,read_customers,write_customers,read_payment_terms,read_payment_mandate,write_payment_mandate,read_publications,write_publications,customer_read_orders,customer_read_customers,write_payment_terms,write_merchant_managed_fulfillment_orders"
+# write_discounts opretter nyhedsbrevets rabatkode (VELKOMMEN15) med appens
+# rabatfunktion extensions/nyhedsbrev-rabat. En app-rabat kan kun oprettes af
+# appen selv (se base44/functions/welcomeDiscount).
+scopes = "write_products,read_products,write_purchase_options,read_purchase_options,read_orders,write_orders,read_all_orders,read_customers,write_customers,read_payment_terms,read_payment_mandate,write_payment_mandate,read_publications,write_publications,customer_read_orders,customer_read_customers,write_payment_terms,write_merchant_managed_fulfillment_orders,write_discounts"
 optional_scopes = [ ]
 use_legacy_install_flow = false
 

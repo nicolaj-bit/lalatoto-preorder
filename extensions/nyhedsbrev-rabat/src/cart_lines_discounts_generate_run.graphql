@@ -1,0 +1,24 @@
+# Hver linjes produkt og om det er på tilbud. Tilbud styres af produktets
+# metafelt lalatoto.tilbud (procent), det samme som temaet og de automatiske
+# rabatter «Tilbud xx %» bruger.
+query CartInput {
+  cart {
+    lines {
+      id
+      merchandise {
+        __typename
+        ... on ProductVariant {
+          product {
+            isGiftCard
+            tilbud: metafield(namespace: "lalatoto", key: "tilbud") {
+              value
+            }
+          }
+        }
+      }
+    }
+  }
+  discount {
+    discountClasses
+  }
+}
